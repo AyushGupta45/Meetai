@@ -11,23 +11,20 @@ const DashboardNavbar = () => {
   const [commandOpen, setCommandOpen] = useState(false);
 
   useEffect(() => {
-  const down = (e: KeyboardEvent) => {
-    if (
-      e.key.toLowerCase() === 'k' &&
-      (e.metaKey || e.ctrlKey)
-    ) {
-      e.preventDefault();
-      setCommandOpen((open) => !open);
-    }
-  };
+    const down = (e: KeyboardEvent) => {
+      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setCommandOpen((open) => !open);
+      }
+    };
 
-  document.addEventListener("keydown", down);
-  return () => document.removeEventListener("keydown", down);
-}, []);
+    document.addEventListener("keydown", down);
+    return () => document.removeEventListener("keydown", down);
+  }, []);
 
   return (
     <>
-      <DashboardCommand open={commandOpen} setOpen={setCommandOpen}/>
+      <DashboardCommand open={commandOpen} setOpen={setCommandOpen} />
       <nav className="flex px-4 gap-x-2 items-center py-3 border-b bg-background">
         <Button className="size-9" variant="outline" onClick={toggleSidebar}>
           {state === "collapsed" || isMobile ? (

@@ -4,19 +4,21 @@ import ErrorState from "@/components/error-state";
 import LoadingState from "@/components/loading-state";
 import { useTRPC } from "@/trpc/client";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { columns } from "../components/columns";
+
 import EmptyState from "@/components/empty-state";
-import { useAgentsFilters } from "../../hooks/use-agents-filter";
-import { DataPagination } from "@/components/data-pagination";
+
 import { useRouter } from "next/navigation";
 import { DataTable } from "@/components/data-table";
+import { columns } from "../components/columns";
+import { useMeetingsFilters } from "../../hooks/use-meetings-filter";
+import { DataPagination } from "@/components/data-pagination";
 
-export const AgentsView = () => {
+export const MeetingsView = () => {
   const router = useRouter();
-  const [filters, setFilters] = useAgentsFilters();
+  const [filters, setFilters] = useMeetingsFilters();
   const trpc = useTRPC();
   const { data } = useSuspenseQuery(
-    trpc.agents.getMany.queryOptions({ ...filters })
+    trpc.meetings.getMany.queryOptions({ ...filters })
   );
 
   return (
@@ -24,35 +26,35 @@ export const AgentsView = () => {
       <DataTable
         data={data.items}
         columns={columns}
-        onRowClick={(row) => router.push(`/agents/${row.id}`)}
+        onRowClick={(row) => router.push(`/meetings/${row.id}`)}
       />
       <DataPagination
-        page={filters.page}
-        totalPages={data.totalPages}
-        onPageChange={(page) => setFilters({ page })}
+      page={filters.page}
+      totalPages={data.totalPages}
+      onPageChange={(page) => setFilters({ page })}
       />
       {data.items.length === 0 && (
         <EmptyState
-          title="Create your first agent"
-          description="Create an agent to join your meetings. Each agent will follow your instructions and interact with participants during the call."
+          title="Create your first meeting"
+          description="Schedule a meeting to connect with others. Each meeting lets you collaborate, share ideas, and interact with participants in real time."
         />
       )}
     </div>
   );
 };
 
-export const AgentsViewLoading = () => {
+export const MeetingsViewLoading = () => {
   return (
     <LoadingState
-      title="Loading Agents"
+      title="Loading Meetings"
       description="This may take few seconds"
     />
   );
 };
-export const AgentsViewError = () => {
+export const MeetingsViewError = () => {
   return (
     <ErrorState
-      title="Error loading Agents"
+      title="Error loading Meetings"
       description="Something went wrong"
     />
   );

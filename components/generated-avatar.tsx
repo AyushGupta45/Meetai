@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface GeneratedAvatarProps {
-  seed: String;
+  seed: string;
   className?: string;
   variant: "botttsNeutral" | "initials";
 }

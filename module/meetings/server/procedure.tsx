@@ -12,34 +12,10 @@ import {
 import { TRPCError } from "@trpc/server";
 import { meetingsInsertSchema, meetingsUpdateSchema } from "../schema";
 import { MeetingStatus } from "../types";
-import { streamVideo } from "@/lib/stream-video";
-import { GeneratedAvatarUri } from "@/lib/avatar";
+// import { streamVideo } from "@/lib/stream-video";
+// import { GeneratedAvatarUri } from "@/lib/avatar";
 
 export const meetingsRouter = createTRPCRouter({
-  generateToken: protectedProcedure.mutation(async ({ ctx }) => {
-    await streamVideo.upsertUsers([
-      {
-        id: ctx.auth.user.id,
-        name: ctx.auth.user.name,
-        role: "admin",
-        image:
-          ctx.auth.user.image ??
-          GeneratedAvatarUri({ seed: ctx.auth.user.name, variant: "initials" }),
-      },
-    ]);
-
-    const expirationTime = Math.floor(Date.now() / 1000) + 3600;
-    const issueAt = Math.floor(Date.now() / 1000) - 60;
-
-    const token = streamVideo.generateUserToken({
-      user_id: ctx.auth.user.id,
-      exp: expirationTime,
-      validity_in_seconds: issueAt,
-    });
-
-    return token;
-  }),
-
   update: protectedProcedure
     .input(meetingsUpdateSchema)
     .mutation(async ({ input, ctx }) => {
@@ -184,28 +160,6 @@ export const meetingsRouter = createTRPCRouter({
         })
         .returning();
 
-      const call = streamVideo.video.call("default", createdMeeting.id);
-      await call.create({
-        data: {
-          created_by_id: ctx.auth.user.id,
-          custom: {
-            meetingId: createdMeeting.id,
-            meetingName: createdMeeting.name,
-          },
-          settings_override: {
-            transcription: {
-              language: "en",
-              mode: "auto-on",
-              closed_caption_mode: "auto-on",
-            },
-            recording: {
-              mode: "auto-on",
-              quality: "1080p",
-            },
-          },
-        },
-      });
-
       const [existingAgent] = await db
         .select()
         .from(agents)
@@ -218,18 +172,26 @@ export const meetingsRouter = createTRPCRouter({
         });
       }
 
-      await streamVideo.upsertUsers([
-        {
-          id: existingAgent.id,
-          name: existingAgent.name,
-          role: "user",
-          image: GeneratedAvatarUri({
-            seed: existingAgent.name,
-            variant: "botttsNeutral",
-          }),
+      const call = {
+        id: `call-${createdMeeting.id}`,
+        createdBy: ctx.auth.user.id,
+        meetingId: createdMeeting.id,
+        status: "created",
+        settings: {
+          transcription: {
+            language: "en",
+            mode: "auto-on",
+          },
+          recording: {
+            mode: "auto-on",
+            quality: "1080p",
+          },
         },
-      ]);
+      };
 
-      return createdMeeting;
+      return {
+        ...createdMeeting,
+        call, // include simulated call in response
+      };
     }),
 });

@@ -1,27 +1,126 @@
-import Link from "next/link";
+"use client";
+
 import Image from "next/image";
-import { CallControls, SpeakerLayout } from "@stream-io/video-react-sdk";
+import { useEffect, useRef, useState } from "react";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { twMerge } from "tailwind-merge";
+import { useSpeakingDetector } from "@/lib/useSpeakDetector";
+import { useAgentCall } from "@/lib/useAgentCall";
 
 interface Props {
   onLeave: () => void;
   meetingName: string;
+  userName: string;
+  userImage: string;
+  agentName: string;
+  agentImage: string;
+  agentInstructions: string;
 }
 
-export const CallActive = ({ onLeave, meetingName }: Props) => {
+export const CallActive = ({
+  onLeave,
+  meetingName,
+  userName,
+  userImage,
+  agentName,
+  agentImage,
+  agentInstructions,
+}: Props) => {
+  const [inCall, setInCall] = useState(true);
+
+  const { isSpeaking: isUserSpeaking } = useSpeakingDetector({
+    enabled: inCall,
+  });
+  const {
+    isSpeaking: isAgentSpeaking,
+  } = useAgentCall({
+    userName,
+    agentName,
+    agentInstructions,
+    inCall,
+    onMessageComplete: (finalReply) => {
+      console.log("✅ Agent Finished Speaking:", finalReply);
+    },
+  });
+
+  const handleLeave = () => {
+    setInCall(false);
+    onLeave();
+  };
+
+  const SpeakingBars = ({ active }: { active: boolean }) =>
+    active ? (
+      <span className="flex items-center gap-0.5 ml-2">
+        <span className="w-1 h-2 bg-blue-400 animate-wave1 rounded-sm" />
+        <span className="w-1 h-3 bg-blue-400 animate-wave2 rounded-sm" />
+        <span className="w-1 h-2 bg-blue-400 animate-wave3 rounded-sm" />
+      </span>
+    ) : (
+      <span className="flex items-center gap-0.5 ml-2">
+        <span className="w-1 h-1 bg-blue-400 rounded-sm" />
+        <span className="w-1 h-1 bg-blue-400 rounded-sm" />
+        <span className="w-1 h-1 bg-blue-400 rounded-sm" />
+      </span>
+    );
+
   return (
     <div className="flex flex-col justify-between p-4 h-full text-white">
-      <div className="bg-[#101213] rounded-full p-4 flex items-center gap-4">
-        <Link
-          href="/"
-          className="flex items-center justify-center p-1 bg-white/10 rounded-full w-fit"
-        >
-          <Image src="/logo.svg" width={22} height={22} alt="Logo" />
-        </Link>
-        <h4 className="text-base">{meetingName}</h4>
+      {/* Top Bar */}
+      <div className="bg-[#101213] rounded-full p-4 flex items-center justify-between gap-4">
+        <div className="flex justify-center items-center gap-3">
+          <div className="flex items-center justify-center p-1 bg-white/10 rounded-full w-fit">
+            <Image src="/logo.svg" width={22} height={22} alt="Logo" />
+          </div>
+          <h4 className="text-lg">{meetingName}</h4>
+        </div>
+
+        <Button onClick={handleLeave} variant="destructive">
+          Leave
+        </Button>
       </div>
-      <SpeakerLayout />
-      <div className="bg-[#101213] rounded-full px-4">
-        <CallControls onLeave={onLeave} />
+
+      {/* Main Content */}
+      <div className="flex flex-col items-center justify-center gap-6 flex-1">
+        {/* Agent Card */}
+        <Card
+          className={twMerge(
+            "w-full sm:w-3/4 md:w-2/4 h-[350px] bg-[#161e25] rounded-lg flex items-center justify-center shadow-md border-2 relative transition-all duration-150",
+            isAgentSpeaking ? "border-green-500" : "border-black"
+          )}
+        >
+          <Image
+            src={agentImage}
+            width={90}
+            height={90}
+            alt={agentName}
+            className="object-cover rounded-full"
+          />
+          <div className="absolute bottom-0 left-0 bg-[#101213] rounded-bl-lg rounded-tr-sm flex items-center px-2 py-1">
+            <p className="text-white text-xs">{agentName}</p>
+            <SpeakingBars active={isAgentSpeaking} />
+          </div>
+        </Card>
+
+        {/* User Card */}
+        <Card
+          className={twMerge(
+            "w-full sm:w-3/4 md:w-1/5 h-[150px] bg-[#161e25] rounded-lg flex items-center justify-center shadow-md border-2 relative transition-all duration-150",
+            isUserSpeaking ? "border-blue-500" : "border-black"
+          )}
+        >
+          <Image
+            src={userImage}
+            width={90}
+            height={90}
+            alt={userName}
+            className="object-cover rounded-full"
+          />
+          <div className="absolute bottom-0 left-0 bg-[#101213] rounded-bl-sm rounded-tr-sm flex items-center px-2 py-1">
+            <p className="text-white text-xs">{userName}</p>
+            <SpeakingBars active={isUserSpeaking} />
+          </div>
+        </Card>
       </div>
     </div>
   );

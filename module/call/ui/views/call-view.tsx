@@ -27,7 +27,7 @@ const CallView = ({ meetingId }: Props) => {
       </div>
     );
   }
-  return <CallProvider meetingId={meetingId} meetingName={data.name} />;
+  return <CallProvider meetingId={meetingId} meetingName={data.name} agentName={data.agent.name} agentInstructions={data.agent.instructions}/>;
 };
 
 export default CallView;

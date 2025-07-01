@@ -1,10 +1,5 @@
-try to speak in between and interrrupt
-change voice based on agent
-try to give a predifeined instrcution with custom instrcution
-meeting state managemet
+
 remove active state,
-upcoming already done
-cnacelled - when user cancells, cancell page
 processing, when the user leaves the meeting, processing
 agent prepares summary of the meeting
 completed- once the summary is completed, display the summary of the meeting

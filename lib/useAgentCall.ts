@@ -19,14 +19,23 @@ export const useAgentCall = ({
 }: UseAgentCallProps) => {
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isUserSpeaking, setIsUserSpeaking] = useState(false);
 
   const listenerRef = useRef<SpeechToText | null>(null);
   const speechQueueRef = useRef<string[]>([]);
   const isSpeakingRef = useRef(false);
-
-  const conversationHistoryRef = useRef<{ role: "user" | "assistant"; content: string }[]>([]);
-  const finalTextTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const conversationHistoryRef = useRef<
+    { role: "user" | "assistant"; content: string }[]
+  >([]);
+  const finalTextTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
   const lastFinalTextRef = useRef<string | null>(null);
+
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const micStreamRef = useRef<MediaStreamAudioSourceNode | null>(null);
+  const volumeCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const stopListening = () => {
     try {
@@ -49,6 +58,10 @@ export const useAgentCall = ({
     const utterance = new SpeechSynthesisUtterance(current);
     utterance.lang = "en-US";
 
+    utterance.onstart = () => {
+      stopListening();
+    };
+
     utterance.onend = () => {
       speakQueue(rest);
     };
@@ -61,7 +74,14 @@ export const useAgentCall = ({
     isSpeakingRef.current = true;
     setIsSpeaking(true);
 
-    const chunks = fullText.match(/[^\.!\?]+[\.!\?]+/g) || [fullText];
+    const cleanedText = fullText
+      .replace(/\*+/g, "")
+      .replace(/#+\s*/g, "")
+      .replace(/[_~`]+/g, "")
+      .replace(/\[(.*?)\]\(.*?\)/g, "$1")
+      .replace(/<\/?[^>]+(>|$)/g, "");
+
+    const chunks = cleanedText.match(/[^\.!\?]+[\.!\?]+/g) || [cleanedText];
     speechQueueRef.current = chunks;
     speakQueue(chunks);
   };
@@ -72,6 +92,7 @@ export const useAgentCall = ({
     const res = await fetch("/api/agent-stream", {
       method: "POST",
       body: JSON.stringify({
+        agentName,
         agentInstructions,
         conversationHistory: conversationHistoryRef.current,
       }),
@@ -93,7 +114,10 @@ export const useAgentCall = ({
       fullAgentText += chunk;
     }
 
-    conversationHistoryRef.current.push({ role: "assistant", content: fullAgentText.trim() });
+    conversationHistoryRef.current.push({
+      role: "assistant",
+      content: fullAgentText.trim(),
+    });
 
     speak(fullAgentText.trim());
     onMessageComplete?.(fullAgentText.trim());
@@ -117,15 +141,12 @@ export const useAgentCall = ({
         (finalText) => {
           if (!finalText || finalText.trim().split(" ").length < 2) return;
 
-          // Save the latest final text
           lastFinalTextRef.current = finalText;
 
-          // Clear any existing timeout
           if (finalTextTimeoutRef.current) {
             clearTimeout(finalTextTimeoutRef.current);
           }
 
-          // Start new timeout to allow more speech
           finalTextTimeoutRef.current = setTimeout(() => {
             const userText = lastFinalTextRef.current;
             if (!userText) return;
@@ -137,10 +158,9 @@ export const useAgentCall = ({
             stopListening();
             fetchAgentResponse(userText);
 
-            // Clean up
             lastFinalTextRef.current = null;
             finalTextTimeoutRef.current = null;
-          }, 3000); // 3-second silence
+          }, 3000);
         },
         () => {
           if (inCall && !isSpeakingRef.current) {
@@ -158,24 +178,66 @@ export const useAgentCall = ({
     }
   };
 
-  const debouncedStartListening = useCallback(debounce(rawStartListening, 300), [
-    inCall,
-    isListening,
-  ]);
+  const debouncedStartListening = useCallback(
+    debounce(rawStartListening, 300),
+    [inCall, isListening]
+  );
+
+  const startUserSpeakingDetection = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const audioContext = new (window.AudioContext ||
+        (window as any).webkitAudioContext)();
+      const analyser = audioContext.createAnalyser();
+      analyser.fftSize = 256;
+
+      const micSource = audioContext.createMediaStreamSource(stream);
+      micSource.connect(analyser);
+
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+      audioContextRef.current = audioContext;
+      analyserRef.current = analyser;
+      micStreamRef.current = micSource;
+
+      volumeCheckIntervalRef.current = setInterval(() => {
+        analyser.getByteFrequencyData(dataArray);
+        const volume = dataArray.reduce((a, b) => a + b) / dataArray.length;
+
+        setIsUserSpeaking(volume > 20); // Adjust threshold as needed
+      }, 200);
+    } catch (err) {
+      console.error("Error accessing microphone:", err);
+    }
+  };
+
+  const stopUserSpeakingDetection = () => {
+    if (volumeCheckIntervalRef.current) {
+      clearInterval(volumeCheckIntervalRef.current);
+    }
+
+    audioContextRef.current?.close();
+    audioContextRef.current = null;
+    analyserRef.current = null;
+    micStreamRef.current = null;
+    setIsUserSpeaking(false);
+  };
 
   useEffect(() => {
     if (inCall) {
       const greeting = `Hello ${userName}, I am ${agentName}, here to help you out.`;
       speak(greeting);
+      startUserSpeakingDetection();
     } else {
       stopListening();
       speechSynthesis.cancel();
+      stopUserSpeakingDetection();
     }
 
     return () => {
       stopListening();
       speechSynthesis.cancel();
-
+      stopUserSpeakingDetection();
       if (finalTextTimeoutRef.current) {
         clearTimeout(finalTextTimeoutRef.current);
       }
@@ -187,5 +249,6 @@ export const useAgentCall = ({
     stopListening,
     isListening,
     isSpeaking,
+    isUserSpeaking, // ← Now available for UI
   };
 };

@@ -64,6 +64,34 @@ const MeetingIdView = ({ meetingId }: Props) => {
   const isCompleted = data.status === "completed";
   const isProcessing = data.status === "processing";
 
+  const handleCancelMeeting = async () => {
+    try {
+      const res = await fetch("/api/meeting-status", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ meetingId, status: "cancelled" }),
+      });
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        toast.error(result.error || "Failed to cancel meeting");
+        return;
+      }
+
+      toast.success("Meeting cancelled successfully");
+
+      // Refresh meeting data
+      await queryClient.invalidateQueries(
+        trpc.meetings.getOne.queryOptions({ id: meetingId })
+      );
+    } catch (error) {
+      toast.error("Something went wrong");
+    }
+  };
+
   return (
     <>
       <RemoveConfirmation />
@@ -85,35 +113,11 @@ const MeetingIdView = ({ meetingId }: Props) => {
         {isUpcoming && (
           <UpcomingState
             meetingId={meetingId}
-            onCancelMeeting={() => {}}
+            onCancelMeeting={handleCancelMeeting}
             isCancelling={false}
           />
         )}
         {isActive && <ActiveState meetingId={meetingId} />}
-
-        {/* <div className="bg-white rounded-lg border">
-          <div className="px-4 py-5 gap-y-5 flex flex-col col-span-5">
-            <div className="flex itmes-center gap-x-3">
-              <GeneratedAvatar
-                seed={data.name}
-                variant="botttsNeutral"
-                className="size-10"
-              />
-              <h2 className="text-2xl font-medium">{data.name}</h2>
-            </div>
-            <Badge
-              variant="outline"
-              className="flex items-center gap-x-2 [&>svg]:size-4"
-            >
-              <VideoIcon className="text-blue-700" />
-              {data.name} {data.name === "1" ? "meeting" : "meetings"}
-            </Badge>
-            <div className="flex flex-col gap-y-4">
-              <p className="text-lg font-medium ">Instructions</p>
-              <p className="text-neutral-800">{data.name}</p>
-            </div>
-          </div>
-        </div> */}
       </div>
     </>
   );

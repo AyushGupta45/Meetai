@@ -5,8 +5,8 @@ import { useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { twMerge } from "tailwind-merge";
-import { useSpeakingDetector } from "@/lib/useSpeakDetector";
 import { useAgentCall } from "@/lib/useAgentCall";
+import { MicIcon, MicOff } from "lucide-react";
 
 interface Props {
   onLeave: () => void;
@@ -29,12 +29,7 @@ export const CallActive = ({
 }: Props) => {
   const [inCall, setInCall] = useState(true);
 
-  const { isSpeaking: isUserSpeaking } = useSpeakingDetector({
-    enabled: inCall,
-  });
-  const {
-    isSpeaking: isAgentSpeaking,
-  } = useAgentCall({
+  const { isSpeaking: isAgentSpeaking, isUserSpeaking } = useAgentCall({
     userName,
     agentName,
     agentInstructions,
@@ -119,6 +114,10 @@ export const CallActive = ({
           <div className="absolute bottom-0 left-0 bg-[#101213] rounded-bl-sm rounded-tr-sm flex items-center px-2 py-1">
             <p className="text-white text-xs">{userName}</p>
             <SpeakingBars active={isUserSpeaking} />
+          </div>
+
+          <div className="absolute top-0 right-0 rounded-bl-sm rounded-tr-sm flex items-center px-2 py-1 text-white">
+            {isUserSpeaking ? <MicIcon  size={20} /> : <MicOff size={20} />}
           </div>
         </Card>
       </div>

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { GeneratedAvatarUri } from "@/lib/avatar";
 import { Button } from "@/components/ui/button";
-import { LogInIcon } from "lucide-react";
+import { BanIcon, LogInIcon } from "lucide-react";
 import Image from "next/image";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 
@@ -50,8 +50,8 @@ export const CallLobby = ({ onJoin }: Props) => {
         </div>
 
         <div className="flex gap-y-2 justify-between w-full mt-4">
-          <Button asChild variant="ghost">
-            <Link href="/meetings">Cancel</Link>
+          <Button asChild variant="secondary">
+            <Link href="/meetings"><BanIcon />Cancel</Link>
           </Button>
           <Button onClick={onJoin}>
             <LogInIcon className="mr-2 h-4 w-4" />

@@ -5,6 +5,9 @@ import { CallLobby } from "./call-lobby";
 import { meetings } from "@/db/schema";
 import { and, not, eq } from "drizzle-orm";
 import { db } from "@/db";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+
 interface Props {
   meetingId: string;
   meetingName: string;
@@ -26,17 +29,20 @@ export const CallUI = ({
 }: Props) => {
   const [show, setShow] = useState<"call" | "ended" | "lobby">("lobby");
 
+  const router = useRouter();
+
   const handleJoin = async () => {
     try {
-      const res = await fetch("/api/join-meeting", {
+      const res = await fetch("/api/meeting-status", {
         method: "POST",
-        body: JSON.stringify({ meetingId }),
+        body: JSON.stringify({ meetingId, status: "active" }),
       });
 
       const result = await res.json();
 
       if (!res.ok) {
-        console.warn(result.error || "Failed to join meeting");
+        toast.error("Failed to join meeting", result.error);
+        router.push(`/meetings/${meetingId}`);
         return;
       }
 
@@ -46,11 +52,25 @@ export const CallUI = ({
     }
   };
 
-  const handleLeave = () => {
-    // if (!call) return;
+  const handleLeave = async () => {
+   try {
+      const res = await fetch("/api/meeting-status", {
+        method: "POST",
+        body: JSON.stringify({ meetingId, status: "processing" }),
+      });
 
-    // call.endCall();
-    setShow("ended");
+      const result = await res.json();
+
+      if (!res.ok) {
+        toast.error("Failed to leave the call", result.error);
+        router.push(`/meetings/${meetingId}`);
+        return;
+      }
+
+      setShow("ended");
+    } catch (err) {
+      console.error("Join error", err);
+    }
   };
 
   return (

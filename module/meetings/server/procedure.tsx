@@ -12,8 +12,6 @@ import {
 import { TRPCError } from "@trpc/server";
 import { meetingsInsertSchema, meetingsUpdateSchema } from "../schema";
 import { MeetingStatus } from "../types";
-// import { streamVideo } from "@/lib/stream-video";
-// import { GeneratedAvatarUri } from "@/lib/avatar";
 
 export const meetingsRouter = createTRPCRouter({
   update: protectedProcedure

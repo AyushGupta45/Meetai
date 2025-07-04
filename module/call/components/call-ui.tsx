@@ -2,11 +2,9 @@ import { useState } from "react";
 import { CallActive } from "./call-active";
 import { CallEnd } from "./call-end";
 import { CallLobby } from "./call-lobby";
-import { meetings } from "@/db/schema";
-import { and, not, eq } from "drizzle-orm";
-import { db } from "@/db";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { useAgentCall } from "@/lib/useAgentCall";
 
 interface Props {
   meetingId: string;
@@ -52,39 +50,19 @@ export const CallUI = ({
     }
   };
 
-  const handleLeave = async () => {
-   try {
-      const res = await fetch("/api/meeting-status", {
-        method: "POST",
-        body: JSON.stringify({ meetingId, status: "processing" }),
-      });
-
-      const result = await res.json();
-
-      if (!res.ok) {
-        toast.error("Failed to leave the call", result.error);
-        router.push(`/meetings/${meetingId}`);
-        return;
-      }
-
-      setShow("ended");
-    } catch (err) {
-      console.error("Join error", err);
-    }
-  };
-
   return (
     <div className="h-full">
       {show === "lobby" && <CallLobby onJoin={handleJoin} />}
       {show === "call" && (
         <CallActive
-          onLeave={handleLeave}
+        meetingId={meetingId}
           meetingName={meetingName}
           userName={userName}
           userImage={userImage}
           agentName={agentName}
           agentImage={agentImage}
           agentInstructions={agentInstructions}
+          onLeave={()=>setShow("ended")}
         />
       )}
       {show === "ended" && <CallEnd />}

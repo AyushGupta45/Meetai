@@ -9,17 +9,19 @@ import { useAgentCall } from "@/lib/useAgentCall";
 import { MicIcon, MicOff } from "lucide-react";
 
 interface Props {
-  onLeave: () => void;
+  meetingId: string;
   meetingName: string;
   userName: string;
   userImage: string;
   agentName: string;
   agentImage: string;
   agentInstructions: string;
+  onLeave: () => void;
 }
 
 export const CallActive = ({
   onLeave,
+  meetingId,
   meetingName,
   userName,
   userImage,
@@ -29,7 +31,11 @@ export const CallActive = ({
 }: Props) => {
   const [inCall, setInCall] = useState(true);
 
-  const { isSpeaking: isAgentSpeaking, isUserSpeaking } = useAgentCall({
+  const {
+    isSpeaking: isAgentSpeaking,
+    isUserSpeaking,
+    onCallEnd,
+  } = useAgentCall({
     userName,
     agentName,
     agentInstructions,
@@ -39,9 +45,10 @@ export const CallActive = ({
     },
   });
 
-  const handleLeave = () => {
+  const handleLeave = async () => {
     setInCall(false);
     onLeave();
+    await onCallEnd({ meetingId });
   };
 
   const SpeakingBars = ({ active }: { active: boolean }) =>
@@ -117,7 +124,7 @@ export const CallActive = ({
           </div>
 
           <div className="absolute top-0 right-0 rounded-bl-sm rounded-tr-sm flex items-center px-2 py-1 text-white">
-            {isUserSpeaking ? <MicIcon  size={20} /> : <MicOff size={20} />}
+            {isUserSpeaking ? <MicIcon size={20} /> : <MicOff size={20} />}
           </div>
         </Card>
       </div>

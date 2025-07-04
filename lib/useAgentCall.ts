@@ -223,9 +223,32 @@ export const useAgentCall = ({
     setIsUserSpeaking(false);
   };
 
+  const onCallEnd = async ({ meetingId }: { meetingId: string }) => {
+    try {
+      const res = await fetch("/api/process-summary", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          conversationHistory: conversationHistoryRef.current,
+          meetingId,
+        }),
+      });
+
+      if (!res.ok) {
+        console.error("Failed to send conversation history.");
+      } else {
+        console.log("Conversation history sent successfully.");
+      }
+    } catch (error) {
+      console.error("Error sending conversation history:", error);
+    }
+  };
+
   useEffect(() => {
     if (inCall) {
-      const greeting = `Hello ${userName}, I am ${agentName}, here to help you out.`;
+      const greeting = `Hello, I am ${agentName}, here to help you out.`;
       speak(greeting);
       startUserSpeakingDetection();
     } else {
@@ -249,6 +272,7 @@ export const useAgentCall = ({
     stopListening,
     isListening,
     isSpeaking,
-    isUserSpeaking, // ← Now available for UI
+    isUserSpeaking,
+    onCallEnd,
   };
 };

@@ -60,11 +60,6 @@ export const columns: ColumnDef<MeetingGetMany[number]>[] = [
             seed={row.original.name}
             className="size-4"
           />
-          <span className="text-sm text-muted">
-            {row.original.startedAt
-              ? format(row.original.startedAt, "MMM d")
-              : ""}
-          </span>
         </div>
       </div>
     ),

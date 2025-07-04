@@ -11,6 +11,7 @@ interface Props {
   agentName: string;
   agentImage: string;
   agentInstructions: string;
+  conversationHistory: string;
 }
 
 export const CallConnect = ({
@@ -21,6 +22,7 @@ export const CallConnect = ({
   agentName,
   agentImage,
   agentInstructions,
+  conversationHistory,
 }: Props) => {
   return (
     <CallUI
@@ -31,6 +33,7 @@ export const CallConnect = ({
       agentName={agentName}
       agentImage={agentImage}
       agentInstructions={agentInstructions}
+      conversationHistory={conversationHistory}
     />
   );
 };

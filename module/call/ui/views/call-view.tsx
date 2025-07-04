@@ -27,7 +27,15 @@ const CallView = ({ meetingId }: Props) => {
       </div>
     );
   }
-  return <CallProvider meetingId={meetingId} meetingName={data.name} agentName={data.agent.name} agentInstructions={data.agent.instructions}/>;
+  return (
+    <CallProvider
+      meetingId={meetingId}
+      meetingName={data.name}
+      agentName={data.agent.name}
+      agentInstructions={data.agent.instructions}
+      conversationHistory={data.conversationHistory ?? ""}
+    />
+  );
 };
 
 export default CallView;

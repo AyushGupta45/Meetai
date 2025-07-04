@@ -8,6 +8,7 @@ interface UseAgentCallProps {
   agentInstructions: string;
   inCall: boolean;
   onMessageComplete?: (msg: string) => void;
+  conversationHistory?: { role: "user" | "assistant"; content: string }[];
 }
 
 export const useAgentCall = ({
@@ -16,6 +17,7 @@ export const useAgentCall = ({
   agentInstructions,
   inCall,
   onMessageComplete,
+  conversationHistory,
 }: UseAgentCallProps) => {
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -246,10 +248,43 @@ export const useAgentCall = ({
     }
   };
 
+  const onCallHold = async ({ meetingId }: { meetingId: string }) => {
+    try {
+      const res = await fetch("/api/save-conversation", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          conversationHistory: conversationHistoryRef.current,
+          meetingId,
+        }),
+      });
+
+      if (!res.ok) {
+        console.error("Failed to send conversation history.");
+      } else {
+        console.log("Conversation history sent successfully.");
+      }
+    } catch (error) {
+      console.error("Error sending conversation history:", error);
+    }
+  };
+
   useEffect(() => {
     if (inCall) {
-      const greeting = `Hello, I am ${agentName}, here to help you out.`;
-      speak(greeting);
+      if (conversationHistory && conversationHistory.length > 0) {
+        // Load conversation history
+        conversationHistoryRef.current = [...conversationHistory];
+
+        // Greet with continuation prompt
+        const greeting = `Hello, shall we continue?`;
+        speak(greeting);
+      } else {
+        const greeting = `Hello, I am ${agentName}, here to help you out.`;
+        speak(greeting);
+      }
+
       startUserSpeakingDetection();
     } else {
       stopListening();
@@ -274,5 +309,6 @@ export const useAgentCall = ({
     isSpeaking,
     isUserSpeaking,
     onCallEnd,
+    onCallHold,
   };
 };

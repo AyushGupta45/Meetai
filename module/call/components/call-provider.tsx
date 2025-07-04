@@ -10,9 +10,10 @@ interface Props {
   meetingName: string;
   agentName: string;
   agentInstructions: string;
+  conversationHistory: string;
 }
 
-export const CallProvider = ({ meetingId, meetingName, agentName, agentInstructions }: Props) => {
+export const CallProvider = ({ meetingId, meetingName, agentName, agentInstructions, conversationHistory }: Props) => {
   const { data, isPending } = authClient.useSession();
 
   if (!data || isPending) {
@@ -36,6 +37,7 @@ export const CallProvider = ({ meetingId, meetingName, agentName, agentInstructi
       agentName={agentName}
       agentImage={GeneratedAvatarUri({ seed: agentName, variant: "botttsNeutral" })}
       agentInstructions={agentInstructions}
+      conversationHistory={conversationHistory}
     />
   );
 };

@@ -2,9 +2,9 @@ import { useState } from "react";
 import { CallActive } from "./call-active";
 import { CallEnd } from "./call-end";
 import { CallLobby } from "./call-lobby";
+import { CallHold } from "./call-hold";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { useAgentCall } from "@/lib/useAgentCall";
 
 interface Props {
   meetingId: string;
@@ -14,6 +14,7 @@ interface Props {
   agentName: string;
   agentImage: string;
   agentInstructions: string;
+  conversationHistory: string;
 }
 
 export const CallUI = ({
@@ -24,10 +25,12 @@ export const CallUI = ({
   agentName,
   agentImage,
   agentInstructions,
+  conversationHistory,
 }: Props) => {
-  const [show, setShow] = useState<"call" | "ended" | "lobby">("lobby");
-
   const router = useRouter();
+  const [show, setShow] = useState<"call" | "ended" | "lobby" | "stalled">(
+    "lobby"
+  );
 
   const handleJoin = async () => {
     try {
@@ -55,17 +58,22 @@ export const CallUI = ({
       {show === "lobby" && <CallLobby onJoin={handleJoin} />}
       {show === "call" && (
         <CallActive
-        meetingId={meetingId}
+          meetingId={meetingId}
           meetingName={meetingName}
           userName={userName}
           userImage={userImage}
           agentName={agentName}
           agentImage={agentImage}
           agentInstructions={agentInstructions}
-          onLeave={()=>setShow("ended")}
+          onLeave={() => setShow("ended")}
+          onHold={() => setShow("stalled")}
+          conversationHistory={
+            conversationHistory ? JSON.parse(conversationHistory) : []
+          }
         />
       )}
       {show === "ended" && <CallEnd />}
+      {show === "stalled" && <CallHold />}
     </div>
   );
 };

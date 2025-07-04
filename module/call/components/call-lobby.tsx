@@ -4,7 +4,6 @@ import { GeneratedAvatarUri } from "@/lib/avatar";
 import { Button } from "@/components/ui/button";
 import { BanIcon, LogInIcon } from "lucide-react";
 import Image from "next/image";
-import { Avatar, AvatarImage } from "@/components/ui/avatar";
 
 interface Props {
   onJoin: () => void;

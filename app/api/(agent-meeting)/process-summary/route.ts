@@ -18,7 +18,7 @@ export async function POST(req: Request) {
     .update(meetings)
     .set({
       status: "processing",
-      transcriptUrl: conversationHistory,
+      conversationHistory: JSON.stringify(conversationHistory),
       endedAt: new Date(),
     })
     .where(eq(meetings.id, meetingId));
@@ -65,6 +65,8 @@ Example:
 
   const summaryText =
     completion.choices?.[0]?.message?.content ?? "No summary available.";
+
+  await new Promise((resolve) => setTimeout(resolve, 30000));
 
   await db
     .update(meetings)

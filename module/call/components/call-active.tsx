@@ -1,12 +1,13 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { twMerge } from "tailwind-merge";
 import { useAgentCall } from "@/lib/useAgentCall";
 import { MicIcon, MicOff } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 interface Props {
   meetingId: string;
@@ -17,10 +18,13 @@ interface Props {
   agentImage: string;
   agentInstructions: string;
   onLeave: () => void;
+  onHold: () => void;
+  conversationHistory?: { role: "user" | "assistant"; content: string }[];
 }
 
 export const CallActive = ({
   onLeave,
+  onHold,
   meetingId,
   meetingName,
   userName,
@@ -28,18 +32,24 @@ export const CallActive = ({
   agentName,
   agentImage,
   agentInstructions,
+  conversationHistory,
 }: Props) => {
   const [inCall, setInCall] = useState(true);
+  const router = useRouter();
+
+
 
   const {
     isSpeaking: isAgentSpeaking,
     isUserSpeaking,
     onCallEnd,
+    onCallHold,
   } = useAgentCall({
     userName,
     agentName,
     agentInstructions,
     inCall,
+    conversationHistory,
     onMessageComplete: (finalReply) => {
       console.log("✅ Agent Finished Speaking:", finalReply);
     },
@@ -50,6 +60,31 @@ export const CallActive = ({
     onLeave();
     await onCallEnd({ meetingId });
   };
+
+  const handleHold = async () => {
+    setInCall(false);
+    onHold();
+    await onCallHold({ meetingId });
+  };
+
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      handleHold();
+      event.preventDefault();
+    };
+
+    const handleRouteChange = () => {
+      handleHold();
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("popstate", handleRouteChange);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("popstate", handleRouteChange);
+    };
+  }, []);
 
   const SpeakingBars = ({ active }: { active: boolean }) =>
     active ? (
@@ -77,9 +112,14 @@ export const CallActive = ({
           <h4 className="text-lg">{meetingName}</h4>
         </div>
 
-        <Button onClick={handleLeave} variant="destructive">
-          Leave
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handleHold} variant="secondary">
+            Hold Meeting
+          </Button>
+          <Button onClick={handleLeave} variant="destructive">
+            Leave Meeting
+          </Button>
+        </div>
       </div>
 
       {/* Main Content */}

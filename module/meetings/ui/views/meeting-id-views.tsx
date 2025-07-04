@@ -17,6 +17,7 @@ import { UpcomingState } from "../components/upcoming-state";
 import { ActiveState } from "../components/active-state";
 import { CancelledState } from "../components/cancelled-state";
 import { ProcessingState } from "../components/processing-state";
+import { CompletedState } from "../components/completed-state";
 
 interface Props {
   meetingId: string;
@@ -83,7 +84,6 @@ const MeetingIdView = ({ meetingId }: Props) => {
 
       toast.success("Meeting cancelled successfully");
 
-      // Refresh meeting data
       await queryClient.invalidateQueries(
         trpc.meetings.getOne.queryOptions({ id: meetingId })
       );
@@ -108,7 +108,7 @@ const MeetingIdView = ({ meetingId }: Props) => {
           onRemove={handleRemoveMeeting}
         />
         {isCancelled && <CancelledState />}
-        {isCompleted && <div>Meeting has been completed</div>}
+        {isCompleted && <CompletedState summary={data.summary}/>}
         {isProcessing && <ProcessingState />}
         {isUpcoming && (
           <UpcomingState

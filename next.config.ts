@@ -10,6 +10,15 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async redirects() {
+    return [
+      {
+        source: '/',
+        destination: '/meetings',
+        permanent: true, // set to false if it's temporary
+      },
+    ];
+  },
 };
 
 export default nextConfig;

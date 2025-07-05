@@ -1,42 +1,57 @@
-import EmptyState from "@/components/empty-state";
-import { Button } from "@/components/ui/button";
-import { BanIcon, VideoIcon } from "lucide-react";
-import Link from "next/link";
+import { SparklesIcon, BookOpenTextIcon, FileTextIcon } from "lucide-react";
+import { MeetingGetOne } from "../../types";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import MeetingSummary from "./meeting-summary";
+import MeetingTranscription from "./meeting-transcription";
+import MeetingChat from "./meeting-chat";
 
 interface Props {
-  summary: string;
-  
+  data: MeetingGetOne;
 }
 
-export const CompletedState = ({
-  summary
-}: Props) => {
+export const CompletedState = ({ data }: Props) => {
   return (
-    <div className="bg-white round-lg px-4 py-5 flex flex-col gap-y-8 items-center justify-center">
-      {/* <EmptyState
-        image="/upcoming.svg"
-        title="Not Started yet"
-        description="Once you start this meeting, a summary will appear here"
-      />
-      <div className="flex flex-col-reverse lg:flex-row lg:justify-center items-center gap-2 w-full">
-        <Button
-          variant="secondary"
-          className="w-full lg:w-auto"
-          onClick={onCancelMeeting}
-          disabled={isCancelling}
-        >
-          <BanIcon />
-          Cancel Meeting
-        </Button>
-        <Button asChild className="w-full lg:w-auto" disabled={isCancelling}>
-          <Link href={`/call/${meetingId}`}>
-            <VideoIcon />
-            Start Meeting
-          </Link>
-        </Button>
-      </div> */}
-
-      {summary}
+    <div className="flex flex-col gap-y-4">
+      <Tabs defaultValue="summary">
+        <div className="bg-white rounded-lg border px-3">
+          <ScrollArea>
+            <TabsList className="p-0 bg-background justify-start rounded-none h-13">
+              <TabsTrigger
+                value="summary"
+                className="text-muted-foreground rounded-none bg-background data-[state=active]:shadow-none border-b-2 border-transparent data-[state=active]:border-b-primary data-[state=active]:text-accent-foreground h-full hover:text-accent-foreground"
+              >
+                <BookOpenTextIcon />
+                Summary
+              </TabsTrigger>
+              <TabsTrigger
+                value="transcript"
+                className="text-muted-foreground rounded-none bg-background data-[state=active]:shadow-none border-b-2 border-transparent data-[state=active]:border-b-primary data-[state=active]:text-accent-foreground h-full hover:text-accent-foreground"
+              >
+                <FileTextIcon />
+                Transcript
+              </TabsTrigger>
+              <TabsTrigger
+                value="chat"
+                className="text-muted-foreground rounded-none bg-background data-[state=active]:shadow-none border-b-2 border-transparent data-[state=active]:border-b-primary data-[state=active]:text-accent-foreground h-full hover:text-accent-foreground"
+              >
+                <SparklesIcon />
+                Ask AI
+              </TabsTrigger>
+            </TabsList>
+            <ScrollBar orientation="horizontal" />
+          </ScrollArea>
+        </div>
+        <TabsContent value="summary">
+          <MeetingSummary data={data} />
+        </TabsContent>
+        <TabsContent value="transcript">
+          <MeetingTranscription data={data} />
+        </TabsContent>
+        <TabsContent value="chat">
+          <MeetingChat data={data} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

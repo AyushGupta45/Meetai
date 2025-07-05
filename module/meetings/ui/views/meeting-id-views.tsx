@@ -108,7 +108,7 @@ const MeetingIdView = ({ meetingId }: Props) => {
           onRemove={handleRemoveMeeting}
         />
         {isCancelled && <CancelledState />}
-        {isCompleted && <CompletedState summary={data.summary}/>}
+        {isCompleted && <CompletedState data={data}/>}
         {isProcessing && <ProcessingState />}
         {isUpcoming && (
           <UpcomingState

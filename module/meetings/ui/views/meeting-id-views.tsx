@@ -15,7 +15,6 @@ import MeetingIdViewHeader from "../components/meeting-id-view-header";
 import { UpdateMeetingDialog } from "../components/update-meeting-dialog";
 import { UpcomingState } from "../components/upcoming-state";
 import { ActiveState } from "../components/active-state";
-import { CancelledState } from "../components/cancelled-state";
 import { ProcessingState } from "../components/processing-state";
 import { CompletedState } from "../components/completed-state";
 
@@ -52,6 +51,11 @@ const MeetingIdView = ({ meetingId }: Props) => {
     `The following action will remove this meetings details`
   );
 
+  const [MarkAsCompletedConfirmation, confirmMarkAsCompleted] = useConfirm(
+    "Mark as Completed?",
+    "This will process the meeting summary and mark the meeting as completed."
+  );
+
   const handleRemoveMeeting = async () => {
     const ok = await confirmRemove();
     if (!ok) return;
@@ -59,42 +63,42 @@ const MeetingIdView = ({ meetingId }: Props) => {
     await removeMeeting.mutateAsync({ id: meetingId });
   };
 
-  const isActive = data.status === "active";
-  const isUpcoming = data.status === "upcoming";
-  const isCancelled = data.status === "cancelled";
-  const isCompleted = data.status === "completed";
-  const isProcessing = data.status === "processing";
+  const handleMarkAsCompleted = async () => {
+    const ok = await confirmMarkAsCompleted();
+    if (!ok) return;
 
-  const handleCancelMeeting = async () => {
     try {
-      const res = await fetch("/api/meeting-status", {
+      const response = await fetch("/api/process-summary", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ meetingId, status: "cancelled" }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          meetingId: meetingId,
+          conversationHistory: data.conversationHistory,
+        }),
       });
 
-      const result = await res.json();
+      router.push("/meetings");
 
-      if (!res.ok) {
-        toast.error(result.error || "Failed to cancel meeting");
-        return;
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to process meeting summary.");
       }
 
-      toast.success("Meeting cancelled successfully");
-
-      await queryClient.invalidateQueries(
-        trpc.meetings.getOne.queryOptions({ id: meetingId })
-      );
-    } catch (error) {
-      toast.error("Something went wrong");
+      toast.success("Meeting marked as completed and summary processed.");
+    } catch (error: any) {
+      toast.error(error.message || "An unexpected error occurred.");
     }
   };
+
+  const isActive = data.status === "active";
+  const isUpcoming = data.status === "upcoming";
+  const isCompleted = data.status === "completed";
+  const isProcessing = data.status === "processing";
 
   return (
     <>
       <RemoveConfirmation />
+      <MarkAsCompletedConfirmation />
       <UpdateMeetingDialog
         open={updateMeetingDialogOpen}
         onOpenChange={setUpdateMeetingDialogOpen}
@@ -106,17 +110,13 @@ const MeetingIdView = ({ meetingId }: Props) => {
           meetingName={data.name}
           onEdit={() => setUpdateMeetingDialogOpen(true)}
           onRemove={handleRemoveMeeting}
+          canEdit={isUpcoming}
+          canMarkAsCompleted={isActive}
+          onMarkAsCompleted={handleMarkAsCompleted}
         />
-        {isCancelled && <CancelledState />}
-        {isCompleted && <CompletedState data={data}/>}
+        {isCompleted && <CompletedState data={data} />}
         {isProcessing && <ProcessingState />}
-        {isUpcoming && (
-          <UpcomingState
-            meetingId={meetingId}
-            onCancelMeeting={handleCancelMeeting}
-            isCancelling={false}
-          />
-        )}
+        {isUpcoming && <UpcomingState meetingId={meetingId} />}
         {isActive && <ActiveState meetingId={meetingId} />}
       </div>
     </>

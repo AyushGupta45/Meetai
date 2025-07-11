@@ -20,7 +20,6 @@ const statusIconMap = {
   active: LoaderIcon,
   completed: CircleCheckIcon,
   processing: LoaderIcon,
-  cancelled: CircleXIcon,
 };
 
 const statusColorMap = {
@@ -28,7 +27,6 @@ const statusColorMap = {
   active: "bg-blue-500/20 text-blue-800 border-blue-800/5",
   completed: "bg-emerald-500/20 text-emerald-800 border-emerald-800/5",
   processing: "bg-gray-300/20 text-gray-800 border-gray-800/5",
-  cancelled: "bg-rose-500/20 text-rose-800 border-rose-800/5",
 };
 
 export const columns: ColumnDef<MeetingGetMany[number]>[] = [
@@ -65,7 +63,7 @@ export const columns: ColumnDef<MeetingGetMany[number]>[] = [
         <Badge
           variant="outline"
           className={cn(
-            "capitalize [&>svg]:size-4 text-muted-foreground",
+            "capitalize [&>svg]:size-4 text-muted-foreground w-[100px]",
             statusColorMap[row.original.status as keyof typeof statusColorMap]
           )}
         >

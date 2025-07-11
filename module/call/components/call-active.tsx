@@ -19,7 +19,7 @@ interface Props {
   agentInstructions: string;
   onLeave: () => void;
   onHold: () => void;
-  conversationHistory?: { role: "user" | "assistant"; content: string }[];
+  conversationHistory?: { role: "user" | "assistant"; content: string, "timestamp": string }[];
 }
 
 export const CallActive = ({
@@ -35,9 +35,6 @@ export const CallActive = ({
   conversationHistory,
 }: Props) => {
   const [inCall, setInCall] = useState(true);
-  const router = useRouter();
-
-
 
   const {
     isSpeaking: isAgentSpeaking,
@@ -54,6 +51,33 @@ export const CallActive = ({
       console.log("✅ Agent Finished Speaking:", finalReply);
     },
   });
+
+  useEffect(() => {
+    const checkMicPermission = async () => {
+      try {
+        const permissionStatus = await navigator.permissions.query({
+          name: "microphone" as PermissionName,
+        });
+
+        if (permissionStatus.state === "granted") {
+        } else if (permissionStatus.state === "prompt") {
+          try {
+            await navigator.mediaDevices.getUserMedia({ audio: true });
+          } catch {
+            alert("Microphone access is required to continue.");
+          }
+        } else if (permissionStatus.state === "denied") {
+          alert(
+            "Microphone access is blocked. Please enable it from browser settings."
+          );
+        }
+      } catch (err) {
+        console.error("Permission check failed:", err);
+      }
+    };
+
+    checkMicPermission();
+  }, []);
 
   const handleLeave = async () => {
     setInCall(false);

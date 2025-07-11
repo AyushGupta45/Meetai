@@ -60,9 +60,15 @@ export const meetingsRouter = createTRPCRouter({
         .select({
           ...getTableColumns(meetings),
           agent: agents,
-          duration: sql<number>`EXTRACT(EPOCH FROM (ended_at - started_at))`.as(
-            "duration"
-          ),
+          duration: sql<number>`
+                  EXTRACT(EPOCH FROM (
+                    CASE 
+                      WHEN started_at IS NOT NULL AND ended_at IS NOT NULL AND haulted_at IS NULL AND restarted_at IS NULL THEN ended_at - started_at
+                      WHEN started_at IS NOT NULL AND haulted_at IS NOT NULL AND restarted_at IS NOT NULL AND ended_at IS NOT NULL THEN 
+                        (haulted_at - started_at) + (ended_at - restarted_at)
+                    END
+                  ))
+          `.as("duration"),
         })
         .from(meetings)
         .innerJoin(agents, eq(meetings.agentId, agents.id))
@@ -96,7 +102,6 @@ export const meetingsRouter = createTRPCRouter({
             MeetingStatus.Active,
             MeetingStatus.Completed,
             MeetingStatus.Processing,
-            MeetingStatus.Cancelled,
           ])
           .nullish(),
       })
@@ -107,10 +112,17 @@ export const meetingsRouter = createTRPCRouter({
         .select({
           ...getTableColumns(meetings),
           agent: agents,
-          duration: sql<number>`EXTRACT(EPOCH FROM (ended_at - started_at))`.as(
-            "duration"
-          ),
+          duration: sql<number>`
+                  EXTRACT(EPOCH FROM (
+                    CASE 
+                      WHEN started_at IS NOT NULL AND ended_at IS NOT NULL AND haulted_at IS NULL AND restarted_at IS NULL THEN ended_at - started_at
+                      WHEN started_at IS NOT NULL AND haulted_at IS NOT NULL AND restarted_at IS NOT NULL AND ended_at IS NOT NULL THEN 
+                        (haulted_at - started_at) + (ended_at - restarted_at)
+                    END
+                  ))
+          `.as("duration"),
         })
+
         .from(meetings)
         .innerJoin(agents, eq(meetings.agentId, agents.id))
         .where(

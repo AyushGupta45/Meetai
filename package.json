@@ -8,8 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio",
-    "dev:webhook": "ngrok http --url=beloved-mutual-oyster.ngrok-free.app 3000"
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
     "@dicebear/collection": "^9.2.2",

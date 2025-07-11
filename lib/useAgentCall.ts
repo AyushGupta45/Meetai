@@ -8,7 +8,11 @@ interface UseAgentCallProps {
   agentInstructions: string;
   inCall: boolean;
   onMessageComplete?: (msg: string) => void;
-  conversationHistory?: { role: "user" | "assistant"; content: string }[];
+  conversationHistory?: {
+    role: "user" | "assistant";
+    content: string;
+    timestamp: string;
+  }[];
 }
 
 export const useAgentCall = ({
@@ -27,17 +31,14 @@ export const useAgentCall = ({
   const speechQueueRef = useRef<string[]>([]);
   const isSpeakingRef = useRef(false);
   const conversationHistoryRef = useRef<
-    { role: "user" | "assistant"; content: string }[]
+    { role: "user" | "assistant"; content: string; timestamp: string }[]
   >([]);
+  const callStartTimeRef = useRef<number | null>(null);
+
   const finalTextTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null
   );
   const lastFinalTextRef = useRef<string | null>(null);
-
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
-  const micStreamRef = useRef<MediaStreamAudioSourceNode | null>(null);
-  const volumeCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const stopListening = () => {
     try {
@@ -46,6 +47,7 @@ export const useAgentCall = ({
       console.warn("Stop called on non-started recognizer:", e);
     }
     setIsListening(false);
+    setIsUserSpeaking(false);
   };
 
   const speakQueue = (chunks: string[]) => {
@@ -89,7 +91,11 @@ export const useAgentCall = ({
   };
 
   const fetchAgentResponse = async (userText: string) => {
-    conversationHistoryRef.current.push({ role: "user", content: userText });
+    conversationHistoryRef.current.push({
+      role: "user",
+      content: userText,
+      timestamp: getCallTimestamp(),
+    });
 
     const res = await fetch("/api/agent-stream", {
       method: "POST",
@@ -119,6 +125,7 @@ export const useAgentCall = ({
     conversationHistoryRef.current.push({
       role: "assistant",
       content: fullAgentText.trim(),
+      timestamp: getCallTimestamp(),
     });
 
     speak(fullAgentText.trim());
@@ -127,7 +134,7 @@ export const useAgentCall = ({
 
   const rawStartListening = () => {
     if (!inCall || isListening || isSpeakingRef.current) return;
-
+    setIsUserSpeaking(true);
     if (listenerRef.current) {
       try {
         listenerRef.current.startListening();
@@ -141,7 +148,7 @@ export const useAgentCall = ({
     try {
       const listener = new SpeechToText(
         (finalText) => {
-          if (!finalText || finalText.trim().split(" ").length < 2) return;
+          if (!finalText) return;
 
           lastFinalTextRef.current = finalText;
 
@@ -184,46 +191,6 @@ export const useAgentCall = ({
     debounce(rawStartListening, 300),
     [inCall, isListening]
   );
-
-  const startUserSpeakingDetection = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const audioContext = new (window.AudioContext ||
-        (window as any).webkitAudioContext)();
-      const analyser = audioContext.createAnalyser();
-      analyser.fftSize = 256;
-
-      const micSource = audioContext.createMediaStreamSource(stream);
-      micSource.connect(analyser);
-
-      const dataArray = new Uint8Array(analyser.frequencyBinCount);
-
-      audioContextRef.current = audioContext;
-      analyserRef.current = analyser;
-      micStreamRef.current = micSource;
-
-      volumeCheckIntervalRef.current = setInterval(() => {
-        analyser.getByteFrequencyData(dataArray);
-        const volume = dataArray.reduce((a, b) => a + b) / dataArray.length;
-
-        setIsUserSpeaking(volume > 20); // Adjust threshold as needed
-      }, 200);
-    } catch (err) {
-      console.error("Error accessing microphone:", err);
-    }
-  };
-
-  const stopUserSpeakingDetection = () => {
-    if (volumeCheckIntervalRef.current) {
-      clearInterval(volumeCheckIntervalRef.current);
-    }
-
-    audioContextRef.current?.close();
-    audioContextRef.current = null;
-    analyserRef.current = null;
-    micStreamRef.current = null;
-    setIsUserSpeaking(false);
-  };
 
   const onCallEnd = async ({ meetingId }: { meetingId: string }) => {
     try {
@@ -271,31 +238,54 @@ export const useAgentCall = ({
     }
   };
 
+  const getCallTimestamp = () => {
+    if (!callStartTimeRef.current) return "00:00";
+    const elapsedMs = Date.now() - callStartTimeRef.current;
+    const seconds = Math.floor(elapsedMs / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes.toString().padStart(2, "0")}:${remainingSeconds
+      .toString()
+      .padStart(2, "0")}`;
+  };
+
+  const getMaxTimestampInHistory = (
+    history: { timestamp: string }[]
+  ): number => {
+    let maxSeconds = 0;
+    history.forEach((msg) => {
+      if (msg.timestamp) {
+        const [min, sec] = msg.timestamp.split(":").map(Number);
+        const totalSec = min * 60 + sec;
+        if (totalSec > maxSeconds) maxSeconds = totalSec;
+      }
+    });
+    return maxSeconds;
+  };
+
   useEffect(() => {
     if (inCall) {
+      let offsetSeconds = 0;
       if (conversationHistory && conversationHistory.length > 0) {
-        // Load conversation history
         conversationHistoryRef.current = [...conversationHistory];
-
-        // Greet with continuation prompt
-        const greeting = `Hello, shall we continue?`;
-        speak(greeting);
-      } else {
-        const greeting = `Hello, I am ${agentName}, here to help you out.`;
-        speak(greeting);
+        offsetSeconds = getMaxTimestampInHistory(conversationHistory);
       }
+      callStartTimeRef.current = Date.now() - offsetSeconds * 1000;
 
-      startUserSpeakingDetection();
+      const greeting =
+        conversationHistory && conversationHistory.length > 0
+          ? "Hello, shall we continue?"
+          : `Hello, I am ${agentName}, here to help you out.`;
+      speak(greeting);
     } else {
       stopListening();
       speechSynthesis.cancel();
-      stopUserSpeakingDetection();
     }
 
     return () => {
       stopListening();
       speechSynthesis.cancel();
-      stopUserSpeakingDetection();
+
       if (finalTextTimeoutRef.current) {
         clearTimeout(finalTextTimeoutRef.current);
       }

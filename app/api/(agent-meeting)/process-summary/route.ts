@@ -65,7 +65,7 @@ export async function POST(req: Request) {
   const summaryText =
     completion.choices?.[0]?.message?.content ?? "No summary available.";
 
-  await new Promise((resolve) => setTimeout(resolve, 30000));
+  await new Promise((resolve) => setTimeout(resolve, 10000));
 
   await db
     .update(meetings)

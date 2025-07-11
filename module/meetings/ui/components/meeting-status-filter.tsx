@@ -51,16 +51,6 @@ const options = [
       </div>
     ),
   },
-  {
-    id: MeetingStatus.Cancelled,
-    value: MeetingStatus.Cancelled,
-    children: (
-      <div className="flex items-center gap-x-2 capitalize">
-        <CircleXIcon />
-        {MeetingStatus.Cancelled}
-      </div>
-    ),
-  },
 ];
 
 export const MeetingsStatusFilter = () => {

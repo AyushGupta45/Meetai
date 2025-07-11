@@ -2,8 +2,8 @@
 
 import { authClient } from "@/lib/auth-client";
 import { LoaderIcon } from "lucide-react";
-import { CallConnect } from "./call-connect";
 import { GeneratedAvatarUri } from "@/lib/avatar";
+import { CallUI } from "./call-ui";
 
 interface Props {
   meetingId: string;
@@ -25,10 +25,9 @@ export const CallProvider = ({ meetingId, meetingName, agentName, agentInstructi
   }
 
   return (
-    <CallConnect
+    <CallUI
       meetingId={meetingId}
       meetingName={meetingName}
-      userId={data.user.id}
       userName={data.user.name}
       userImage={
         data.user.image ??

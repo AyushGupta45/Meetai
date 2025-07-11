@@ -66,6 +66,9 @@ const MeetingTranscription = ({ data }: Props) => {
                   <AvatarImage src={avatarSrc} />
                 </Avatar>
                 <p className="text-sm font-medium">{name}</p>
+                <p className="text-sm text-blue-500 font-medium">
+                  {msg.timestamp ? msg.timestamp : null}
+                </p>
               </div>
               <Highlighter
                 className="text-sm text-neutral-700"

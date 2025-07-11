@@ -36,7 +36,7 @@ export const CallUI = ({
     try {
       const res = await fetch("/api/meeting-status", {
         method: "POST",
-        body: JSON.stringify({ meetingId, status: "active" }),
+        body: JSON.stringify({ meetingId }),
       });
 
       const result = await res.json();

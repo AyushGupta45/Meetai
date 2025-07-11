@@ -11,5 +11,4 @@ export type MeetingGetMany =
     Active = "active",
     Completed = "completed",
     Processing = "processing",
-    Cancelled = "cancelled",
   }

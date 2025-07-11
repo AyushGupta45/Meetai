@@ -5,8 +5,6 @@ import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   const { meetingId, conversationHistory } = await req.json();
-  console.log(conversationHistory);
-  console.log(typeof conversationHistory);
 
   const [meeting] = await db
     .select()
@@ -17,6 +15,7 @@ export async function POST(req: Request) {
     .update(meetings)
     .set({
       conversationHistory: JSON.stringify(conversationHistory),
+      haultedAt: new Date(),
     })
     .where(eq(meetings.id, meetingId));
 

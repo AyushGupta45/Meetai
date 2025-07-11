@@ -19,6 +19,7 @@ import {
   TrashIcon,
   PencilIcon,
   MoreVerticalIcon,
+  CheckCircle,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -27,8 +28,19 @@ interface Props {
   meetingName: string;
   onEdit: () => void;
   onRemove: () => void;
+  canEdit: boolean;
+  canMarkAsCompleted: boolean;
+  onMarkAsCompleted: () => void;
 }
-const MeetingIdViewHeader = ({ meetingId, meetingName, onEdit, onRemove }: Props) => {
+const MeetingIdViewHeader = ({
+  meetingId,
+  meetingName,
+  onEdit,
+  onRemove,
+  canEdit,
+  canMarkAsCompleted,
+  onMarkAsCompleted,
+}: Props) => {
   return (
     <div className="flex items-center justify-between">
       <Breadcrumb>
@@ -59,10 +71,18 @@ const MeetingIdViewHeader = ({ meetingId, meetingName, onEdit, onRemove }: Props
         </DropdownMenuTrigger>
 
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={onEdit}>
-            <PencilIcon className="size-4 text-black" />
-            Edit
-          </DropdownMenuItem>
+          {canEdit && (
+            <DropdownMenuItem onClick={onEdit}>
+              <PencilIcon className="size-4 text-black" />
+              Edit
+            </DropdownMenuItem>
+          )}
+          {canMarkAsCompleted && (
+            <DropdownMenuItem onClick={onMarkAsCompleted}>
+              <CheckCircle className="size-4 text-black" />
+              Mark as Completed
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem onClick={onRemove}>
             <TrashIcon className="size-4 text-black" />
             Delete

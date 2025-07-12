@@ -16,7 +16,6 @@ interface UseAgentCallProps {
 }
 
 export const useAgentCall = ({
-  userName,
   agentName,
   agentInstructions,
   inCall,

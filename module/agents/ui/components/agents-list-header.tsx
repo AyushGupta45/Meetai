@@ -6,7 +6,7 @@ import { PlusIcon, XCircleIcon } from "lucide-react";
 import { NewAgentDialog } from "./new-agent-dialog";
 import { useAgentsFilters } from "../../hooks/use-agents-filter";
 import { AgentsSearchFilter } from "./agents-search-filters";
-import { DEFAULT_PAGE } from "@/app/constants";
+import { DEFAULT_PAGE } from "@/module/meetings/constants";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 const AgentsListHeader = () => {

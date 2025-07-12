@@ -1,5 +1,10 @@
-import { createLoader, parseAsInteger, parseAsString, parseAsStringEnum } from "nuqs/server";
-import { DEFAULT_PAGE } from "@/app/constants";
+import {
+  createLoader,
+  parseAsInteger,
+  parseAsString,
+  parseAsStringEnum,
+} from "nuqs/server";
+import { DEFAULT_PAGE } from "@/module/meetings/constants";
 import { MeetingStatus } from "./types";
 
 export const filterSearchParams = {

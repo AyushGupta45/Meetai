@@ -19,7 +19,7 @@ export const ActiveState = ({ meetingId }: Props) => {
         <Button asChild className="w-full lg:w-auto">
           <Link href={`/call/${meetingId}`}>
             <VideoIcon />
-            Join Meeting
+            Resume Meeting
           </Link>
         </Button>
       </div>

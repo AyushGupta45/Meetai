@@ -18,6 +18,7 @@ import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { usePathname } from "next/navigation";
 import DashboardUserButton from "./dashboard-user-button";
+import DashboardTrial from "./dashboard-trial";
 
 const firstsection = [
   {
@@ -39,7 +40,7 @@ const secondsection = [
   },
 ];
 
-const DashboardSiderbar = () => {
+const DashboardSidebar = () => {
   const pathname = usePathname();
   return (
     <Sidebar>
@@ -110,10 +111,13 @@ const DashboardSiderbar = () => {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
-        <DashboardUserButton/>
+        <DashboardTrial />
+        <div className="py-1" />
+
+        <DashboardUserButton />
       </SidebarFooter>
     </Sidebar>
   );
 };
 
-export default DashboardSiderbar;
+export default DashboardSidebar;

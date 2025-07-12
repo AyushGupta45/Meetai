@@ -1,4 +1,4 @@
-import { DEFAULT_PAGE } from "@/app/constants";
+import { DEFAULT_PAGE } from "@/module/meetings/constants";
 import {
   parseAsInteger,
   parseAsString,

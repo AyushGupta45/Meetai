@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { Button } from "../../../../components/ui/button";
 import { PlusIcon, XCircleIcon } from "lucide-react";
-import { DEFAULT_PAGE } from "@/app/constants";
+import { DEFAULT_PAGE } from "@/module/meetings/constants";
 import { NewMeetingDialog } from "./new-meeting-dialog";
 import { useMeetingsFilters } from "../../hooks/use-meetings-filter";
 import { MeetingsSearchFilter } from "./meetings-search-filters";
@@ -50,7 +50,7 @@ const MeetingsListHeader = () => {
               </Button>
             )}
           </div>
-          <ScrollBar orientation="horizontal"/>
+          <ScrollBar orientation="horizontal" />
         </ScrollArea>
       </div>
     </>

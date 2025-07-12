@@ -94,6 +94,7 @@ export const meetings = pgTable("meetings", {
   restartedAt: timestamp("restarted_at"),
   haultedAt: timestamp("haulted_at"),
   conversationHistory: text("conversation_history"),
+  chatHistory: text("chat_history"),
   summary: text("summary"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),

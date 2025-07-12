@@ -4,6 +4,11 @@ import { db } from "@/db";
 import { meetings } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
+interface ChatMessage {
+  role: "system" | "user" | "assistant";
+  content: string;
+}
+
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY! });
 
 export async function POST(req: Request) {
@@ -30,13 +35,13 @@ export async function POST(req: Request) {
     Be concise, helpful, and focus on providing accurate information from the meeting and the ongoing conversation.
   `.trim();
 
-  const sanitizedMessages = (messages as { role: any; content: any }[]).map(
+  const sanitizedMessages = (messages as ChatMessage[]).map(
     ({ role, content }) => ({
       role,
       content,
     })
   );
-
+  
   const groqResponse = await groq.chat.completions.create({
     model: "llama3-8b-8192",
     messages: [{ role: "system", content: systemPrompt }, ...sanitizedMessages],
@@ -66,5 +71,5 @@ export async function POST(req: Request) {
     })
     .where(eq(meetings.id, meetingId));
 
-  return NextResponse.json({  reply: assistantMessage });
+  return NextResponse.json({ reply: assistantMessage });
 }

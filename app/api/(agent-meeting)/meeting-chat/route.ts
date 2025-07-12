@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
 import Groq from "groq-sdk";
+import { db } from "@/db";
+import { meetings } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY! });
 
 export async function POST(req: Request) {
   const body = await req.json();
-  const { messages, summary, instructions, agentName, userName } = body;
+  const { meetingId, messages, summary, instructions, agentName, userName } =
+    body;
 
   const systemPrompt = `
     You are an AI assistant and you name is ${agentName}.
@@ -26,12 +30,41 @@ export async function POST(req: Request) {
     Be concise, helpful, and focus on providing accurate information from the meeting and the ongoing conversation.
   `.trim();
 
+  const sanitizedMessages = (messages as { role: any; content: any }[]).map(
+    ({ role, content }) => ({
+      role,
+      content,
+    })
+  );
+
   const groqResponse = await groq.chat.completions.create({
     model: "llama3-8b-8192",
-    messages: [{ role: "system", content: systemPrompt }, ...messages],
+    messages: [{ role: "system", content: systemPrompt }, ...sanitizedMessages],
   });
 
   const reply = groqResponse.choices?.[0]?.message;
 
-  return NextResponse.json({ reply });
+  if (!reply) {
+    return NextResponse.json(
+      { error: "No reply from assistant" },
+      { status: 500 }
+    );
+  }
+
+  const assistantMessage = {
+    ...reply,
+    name: agentName,
+    timestamp: new Date().toISOString(),
+  };
+
+  const updatedMessages = [...messages, assistantMessage];
+
+  await db
+    .update(meetings)
+    .set({
+      chatHistory: JSON.stringify(updatedMessages),
+    })
+    .where(eq(meetings.id, meetingId));
+
+  return NextResponse.json({  reply: assistantMessage });
 }

@@ -34,7 +34,7 @@ const AgentIdViewHeader = ({ agentId, agentName, onEdit, onRemove }: Props) => {
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
-            <BreadcrumbLink asChild className="font-medium text-xl">
+            <BreadcrumbLink asChild className="font-medium text-lg sm:text-xl">
               <Link href="/agents">My Agents</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
@@ -44,7 +44,7 @@ const AgentIdViewHeader = ({ agentId, agentName, onEdit, onRemove }: Props) => {
           <BreadcrumbItem>
             <BreadcrumbLink
               asChild
-              className="font-medium text-xl text-foreground"
+              className="font-medium text-lg sm:text-xl text-foreground"
             >
               <Link href={`/agents/${agentId}`}>{agentName}</Link>
             </BreadcrumbLink>

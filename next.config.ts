@@ -15,7 +15,7 @@ const nextConfig: NextConfig = {
       {
         source: '/',
         destination: '/meetings',
-        permanent: true, // set to false if it's temporary
+        permanent: true,
       },
     ];
   },

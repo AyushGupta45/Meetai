@@ -46,7 +46,7 @@ const MeetingIdViewHeader = ({
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
-            <BreadcrumbLink asChild className="font-medium text-xl">
+            <BreadcrumbLink asChild className="font-medium text-lg sm:text-xl">
               <Link href="/meetings">My Meetings</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
@@ -56,7 +56,7 @@ const MeetingIdViewHeader = ({
           <BreadcrumbItem>
             <BreadcrumbLink
               asChild
-              className="font-medium text-xl text-foreground"
+              className="font-medium text-lg sm:text-xl text-foreground"
             >
               <Link href={`/agents/${meetingId}`}>{meetingName}</Link>
             </BreadcrumbLink>

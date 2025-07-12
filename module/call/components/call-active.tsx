@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { twMerge } from "tailwind-merge";
 import { useAgentCall } from "@/lib/useAgentCall";
 import { MicIcon, MicOff } from "lucide-react";
-import { useRouter } from "next/navigation";
 
 interface Props {
   meetingId: string;
@@ -128,7 +127,7 @@ export const CallActive = ({
   return (
     <div className="flex flex-col justify-between p-4 h-full text-white">
       {/* Top Bar */}
-      <div className="bg-[#101213] rounded-full p-4 flex items-center justify-between gap-4">
+      <div className="bg-[#101213] rounded-full p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex justify-center items-center gap-3">
           <div className="flex items-center justify-center p-1 bg-white/10 rounded-full w-fit">
             <Image src="/logo.svg" width={22} height={22} alt="Logo" />
@@ -168,10 +167,9 @@ export const CallActive = ({
           </div>
         </Card>
 
-        {/* User Card */}
         <Card
           className={twMerge(
-            "w-full sm:w-3/4 md:w-1/5 h-[150px] bg-[#161e25] rounded-lg flex items-center justify-center shadow-md border-2 relative transition-all duration-150",
+            "w-3/4 sm:w-2/4 md:w-1/4 h-[150px] bg-[#161e25] rounded-lg flex items-center justify-center shadow-md border-2 relative transition-all duration-150",
             isUserSpeaking ? "border-blue-500" : "border-black"
           )}
         >

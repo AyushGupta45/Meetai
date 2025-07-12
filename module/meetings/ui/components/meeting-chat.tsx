@@ -15,11 +15,28 @@ interface Props {
 const MeetingChat = ({ data }: Props) => {
   const { data: session } = authClient.useSession();
   const [chatMessages, setChatMessages] = useState<any[]>([]);
+  const [chatLoaded, setChatLoaded] = useState(false);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [showTyping, setShowTyping] = useState(false);
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    if (data.chatHistory && typeof data.chatHistory === "string") {
+      try {
+        const parsedHistory = JSON.parse(data.chatHistory);
+        if (Array.isArray(parsedHistory)) {
+          setChatMessages(parsedHistory);
+        } else {
+          console.warn("Parsed chat history is not an array:", parsedHistory);
+        }
+      } catch (err) {
+        console.error("Failed to parse chatHistory:", err);
+      }
+    }
+
+    setChatLoaded(true);
+  }, [data.chatHistory]);
 
   useEffect(() => {
     endOfMessagesRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -34,7 +51,8 @@ const MeetingChat = ({ data }: Props) => {
       timestamp: new Date().toISOString(),
     };
 
-    setChatMessages((prev) => [...prev, userMessage]);
+    const updatedMessages = [...chatMessages, userMessage];
+    setChatMessages(updatedMessages);
     setInput("");
     setLoading(true);
     setShowTyping(true);
@@ -46,26 +64,18 @@ const MeetingChat = ({ data }: Props) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          messages: [...chatMessages, userMessage].map(({ role, content }) => ({
-            role,
-            content,
-          })),
+          meetingId: data.id,
+          messages: updatedMessages,
           summary: data.summary,
           instructions: data.agent.instructions,
           agentName: data.agent.name,
-          userName: session?.user.name
+          userName: session?.user.name,
         }),
       });
 
       const { reply } = await res.json();
 
-      const assistantMessage = {
-        ...reply,
-        timestamp: new Date().toISOString(),
-        name: data.agent.name || "Assistant",
-      };
-
-      setChatMessages((prev) => [...prev, assistantMessage]);
+      setChatMessages((prev) => [...prev, reply]);
     } catch (err) {
       console.error("Chat error:", err);
     } finally {
@@ -96,7 +106,7 @@ const MeetingChat = ({ data }: Props) => {
             </Avatar>
           </div>
           <div className="text-xs text-muted-foreground mt-1">
-            <span>Today at {format(new Date(msg.timestamp), "p")}</span>
+            <span>{format(new Date(msg.timestamp), "PP p")}</span>
           </div>
         </div>
       </div>
@@ -124,7 +134,8 @@ const MeetingChat = ({ data }: Props) => {
           </div>
           <div className="text-xs text-muted-foreground mt-1">
             <span>
-              {name} • {format(new Date(msg.timestamp), "p")}
+              {msg.name} • {format(new Date(msg.timestamp), "PP p")}
+
             </span>
           </div>
         </div>
@@ -164,7 +175,7 @@ const MeetingChat = ({ data }: Props) => {
 
   return (
     <div className="bg-white rounded-lg border w-full h-[calc(80vh-72px)] flex flex-col p-2 overflow-hidden">
-      {chatMessages.length === 0 ? (
+      {chatLoaded && chatMessages.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center text-muted-foreground select-none">
           <MessageSquareCode
             strokeWidth={1.5}

@@ -20,7 +20,7 @@ const DisabledVideoPreview = () => {
     });
 
   return (
-    <div className=" bg-muted rounded-md flex w-[400px] h-[200px] items-center justify-center border">
+    <div className=" bg-muted rounded-md flex w-full h-[200px] items-center justify-center border">
       <Image
         src={image}
         alt="User Avatar"
@@ -36,7 +36,7 @@ const DisabledVideoPreview = () => {
 export const CallLobby = ({ onJoin }: Props) => {
   return (
     <div className="flex flex-col items-center justify-center h-full bg-radial from-sidebar-accent">
-      <div className="flex flex-col items-center justify-center gap-y-6 bg-background rounded-lg p-10 shadow-sm">
+      <div className="flex flex-col items-center justify-center w-full sm:w-auto gap-y-6 bg-background rounded-lg p-6 sm:p-10 shadow-sm border-4">
         <div className="flex flex-col gap-y-2 text-center">
           <h6 className="text-lg font-medium">Ready to join?</h6>
           <p className="text-sm">Set up your call before joining</p>

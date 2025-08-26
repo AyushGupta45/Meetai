@@ -49,7 +49,24 @@ export const useAgentCall = ({
     setIsUserSpeaking(false);
   };
 
-  const speakQueue = (chunks: string[]) => {
+  // Initialize voices for mobile browsers
+  const initVoices = () => {
+    return new Promise<void>((resolve) => {
+      if (speechSynthesis.getVoices().length > 0) {
+        resolve();
+        return;
+      }
+
+      const onVoicesChanged = () => {
+        speechSynthesis.removeEventListener("voiceschanged", onVoicesChanged);
+        resolve();
+      };
+
+      speechSynthesis.addEventListener("voiceschanged", onVoicesChanged);
+    });
+  };
+
+  const speakQueue = async (chunks: string[]) => {
     if (chunks.length === 0) {
       isSpeakingRef.current = false;
       setIsSpeaking(false);
@@ -57,9 +74,23 @@ export const useAgentCall = ({
       return;
     }
 
+    // Initialize voices before speaking
+    await initVoices();
+
     const [current, ...rest] = chunks;
     const utterance = new SpeechSynthesisUtterance(current);
     utterance.lang = "en-US";
+
+    // Get voices and select a good one for mobile
+    const voices = speechSynthesis.getVoices();
+    const englishVoice = voices.find(
+      (voice) =>
+        voice.lang.includes("en") &&
+        (voice.name.includes("Google") || voice.name.includes("Female"))
+    );
+    if (englishVoice) {
+      utterance.voice = englishVoice;
+    }
 
     utterance.onstart = () => {
       stopListening();
@@ -72,21 +103,29 @@ export const useAgentCall = ({
     speechSynthesis.speak(utterance);
   };
 
-  const speak = (fullText: string) => {
-    speechSynthesis.cancel();
-    isSpeakingRef.current = true;
-    setIsSpeaking(true);
+  const speak = async (fullText: string) => {
+    try {
+      speechSynthesis.cancel();
+      isSpeakingRef.current = true;
+      setIsSpeaking(true);
 
-    const cleanedText = fullText
-      .replace(/\*+/g, "")
-      .replace(/#+\s*/g, "")
-      .replace(/[_~`]+/g, "")
-      .replace(/\[(.*?)\]\(.*?\)/g, "$1")
-      .replace(/<\/?[^>]+(>|$)/g, "");
+      const cleanedText = fullText
+        .replace(/\*+/g, "")
+        .replace(/#+\s*/g, "")
+        .replace(/[_~`]+/g, "")
+        .replace(/\[(.*?)\]\(.*?\)/g, "$1")
+        .replace(/<\/?[^>]+(>|$)/g, "");
 
-    const chunks = cleanedText.match(/[^\.!\?]+[\.!\?]+/g) || [cleanedText];
-    speechQueueRef.current = chunks;
-    speakQueue(chunks);
+      const chunks = cleanedText.match(/[^\.!\?]+[\.!\?]+/g) || [cleanedText];
+      speechQueueRef.current = chunks;
+      await speakQueue(chunks);
+    } catch (error) {
+      console.error("Error in speak function:", error);
+      // On error, try to continue with the call even if speech fails
+      isSpeakingRef.current = false;
+      setIsSpeaking(false);
+      debouncedStartListening();
+    }
   };
 
   const fetchAgentResponse = async (userText: string) => {
@@ -193,6 +232,26 @@ export const useAgentCall = ({
 
   const onCallEnd = async ({ meetingId }: { meetingId: string }) => {
     try {
+      // Stop all voice-related activities
+      stopListening();
+      speechSynthesis.cancel();
+      isSpeakingRef.current = false;
+      setIsSpeaking(false);
+      setIsListening(false);
+      setIsUserSpeaking(false);
+
+      // Clear all timeouts and listeners
+      if (finalTextTimeoutRef.current) {
+        clearTimeout(finalTextTimeoutRef.current);
+        finalTextTimeoutRef.current = null;
+      }
+
+      if (listenerRef.current) {
+        listenerRef.current.stopListening();
+        listenerRef.current = null;
+      }
+
+      // Save conversation history and process summary
       const res = await fetch("/api/process-summary", {
         method: "POST",
         headers: {
@@ -204,11 +263,10 @@ export const useAgentCall = ({
         }),
       });
 
-      if (!res.ok) {
-        console.error("Failed to send conversation history.");
-      } else {
-        console.log("Conversation history sent successfully.");
-      }
+      // Reset all refs
+      speechQueueRef.current = [];
+      conversationHistoryRef.current = [];
+      callStartTimeRef.current = null;
     } catch (error) {
       console.error("Error sending conversation history:", error);
     }
@@ -226,12 +284,6 @@ export const useAgentCall = ({
           meetingId,
         }),
       });
-
-      if (!res.ok) {
-        console.error("Failed to send conversation history.");
-      } else {
-        console.log("Conversation history sent successfully.");
-      }
     } catch (error) {
       console.error("Error sending conversation history:", error);
     }
@@ -262,6 +314,31 @@ export const useAgentCall = ({
     return maxSeconds;
   };
 
+  // Initialize audio for mobile browsers
+  const initializeAudio = async () => {
+    try {
+      // Request audio permissions and initialize audio context
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      // Create and start an audio context (this helps with audio playback on mobile)
+      const AudioContext =
+        window.AudioContext || (window as any).webkitAudioContext;
+      const audioContext = new AudioContext();
+      const silence = audioContext.createOscillator();
+      silence.connect(audioContext.destination);
+      silence.start();
+      silence.stop(audioContext.currentTime + 0.01);
+
+      // Pre-initialize speech synthesis
+      await initVoices();
+
+      return true;
+    } catch (error) {
+      console.error("Error initializing audio:", error);
+      return false;
+    }
+  };
+
   useEffect(() => {
     if (inCall) {
       let offsetSeconds = 0;
@@ -271,22 +348,44 @@ export const useAgentCall = ({
       }
       callStartTimeRef.current = Date.now() - offsetSeconds * 1000;
 
-      const greeting =
-        conversationHistory && conversationHistory.length > 0
-          ? "Hello, shall we continue?"
-          : `Hello, I am ${agentName}, here to help you out.`;
-      speak(greeting);
+      // Initialize audio and then speak greeting
+      initializeAudio()
+        .then(() => {
+          const greeting =
+            conversationHistory && conversationHistory.length > 0
+              ? "Hello, shall we continue?"
+              : `Hello, I am ${agentName}, here to help you out.`;
+          speak(greeting);
+        })
+        .catch((error) => {
+          console.error("Failed to initialize audio:", error);
+        });
     } else {
+      // Complete cleanup when call ends
       stopListening();
       speechSynthesis.cancel();
+      isSpeakingRef.current = false;
+      setIsSpeaking(false);
+      setIsListening(false);
+      setIsUserSpeaking(false);
+      listenerRef.current?.stopListening();
+      listenerRef.current = null;
+      speechQueueRef.current = [];
+      conversationHistoryRef.current = [];
+      callStartTimeRef.current = null;
+      if (finalTextTimeoutRef.current) {
+        clearTimeout(finalTextTimeoutRef.current);
+        finalTextTimeoutRef.current = null;
+      }
     }
 
     return () => {
+      // Cleanup on unmount
       stopListening();
       speechSynthesis.cancel();
-
       if (finalTextTimeoutRef.current) {
         clearTimeout(finalTextTimeoutRef.current);
+        finalTextTimeoutRef.current = null;
       }
     };
   }, [inCall]);

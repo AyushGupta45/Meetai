@@ -1,36 +1,71 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MeetAI 📞🤖
 
-## Getting Started
+**Live Demo:** [https://meetai-steel.vercel.app](https://meetai-steel.vercel.app)
 
-First, run the development server:
+MeetAI is a full-stack mock-call meeting platform where users can create AI agents, engage in one-on-one meetings, and access detailed summaries, transcripts, and contextual chats — all powered by modern web technologies and **Groq language models**.
+
+---
+
+## 🛠 Getting Started
 
 ```bash
+# Install dependencies
+npm install
+
+# Run the development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## ⚙️ Tech Stack
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Next.js** with Server-Side Rendering (SSR)
+- **tRPC** Architecture
+- **Drizzle ORM** + **Neon Database**
+- **ShadCN UI** Components
+- **Better Auth** for authentication
+- **Polar** for subscription management (monthly/yearly, sandbox-ready)
+- **Groq** LLMs for agent responses
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## 🧩 Core Features
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **Agents**
+  - Create up to 10 custom agents (free tier)
+  - Edit agent name and instructions
+  - Delete agents
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **Meetings**
+  - Create up to 10 meetings (free tier)
+  - Add meeting name and schedule agents
+  - Join/hold/resume/end meetings
+  - Hold meetings retain full context
+  - On end: automatic transcription, summary, and chat features
+  - Edit meetings (if not started)
+  - Delete or mark meetings as complete
 
-## Deploy on Vercel
+- **Call UI**
+  - Mock 1-on-1 call (not real-time)
+  - Real-time speech-to-text (user) and browser TTS (agent)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 💡 Architecture Overview
+
+- User speech is converted to text via browser speech recognition
+- Query + instructions sent to backend with full conversation history
+- Groq LLM generates a response
+- Agent speaks using browser text-to-speech
+- All interactions are stored for summaries, transcripts, and chat
+
+---
+
+## 🚧 Known Issues
+
+- ❌ **Mobile browsers**: Agent speech (TTS) does not play audio
+- 📱 Minor responsive layout issues on smaller screens
+- ⚠️ **Polar** integration: Cannot access billing page or change plan page (code correct, known issue)
+- 🔉 Speech recognition may occasionally misinterpret user inputs
+

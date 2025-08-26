@@ -18,7 +18,11 @@ interface Props {
   agentInstructions: string;
   onLeave: () => void;
   onHold: () => void;
-  conversationHistory?: { role: "user" | "assistant"; content: string, "timestamp": string }[];
+  conversationHistory?: {
+    role: "user" | "assistant";
+    content: string;
+    timestamp: string;
+  }[];
 }
 
 export const CallActive = ({
@@ -46,9 +50,7 @@ export const CallActive = ({
     agentInstructions,
     inCall,
     conversationHistory,
-    onMessageComplete: (finalReply) => {
-      console.log("✅ Agent Finished Speaking:", finalReply);
-    },
+    onMessageComplete: () => {},
   });
 
   useEffect(() => {

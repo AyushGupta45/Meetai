@@ -252,7 +252,7 @@ export const useAgentCall = ({
       }
 
       // Save conversation history and process summary
-      const res = await fetch("/api/process-summary", {
+      await fetch("/api/process-summary", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -274,7 +274,7 @@ export const useAgentCall = ({
 
   const onCallHold = async ({ meetingId }: { meetingId: string }) => {
     try {
-      const res = await fetch("/api/save-conversation", {
+      await fetch("/api/save-conversation", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -322,7 +322,13 @@ export const useAgentCall = ({
 
       // Create and start an audio context (this helps with audio playback on mobile)
       const AudioContext =
-        window.AudioContext || (window as any).webkitAudioContext;
+        window.AudioContext ||
+        (
+          window as unknown as {
+            webkitAudioContext: typeof window.AudioContext;
+          }
+        ).webkitAudioContext;
+
       const audioContext = new AudioContext();
       const silence = audioContext.createOscillator();
       silence.connect(audioContext.destination);

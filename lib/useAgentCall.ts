@@ -1,6 +1,8 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import SpeechToText from "speech-to-text";
 import debounce from "lodash/debounce";
+import { useTRPC } from "@/trpc/client";
+import { useMutation } from "@tanstack/react-query";
 
 interface UseAgentCallProps {
   userName: string;
@@ -13,6 +15,9 @@ interface UseAgentCallProps {
     content: string;
     timestamp: string;
   }[];
+  browserSpeak: (text: string, voiceId?: string) => Promise<void>;
+  browserStop: () => void;
+  voiceId?: string;
 }
 
 export const useAgentCall = ({
@@ -21,13 +26,32 @@ export const useAgentCall = ({
   inCall,
   onMessageComplete,
   conversationHistory,
+  browserSpeak,
+  browserStop,
+  voiceId,
 }: UseAgentCallProps) => {
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isUserSpeaking, setIsUserSpeaking] = useState(false);
+  const [messages, setMessages] = useState<
+    { role: "user" | "assistant"; content: string; timestamp: string }[]
+  >([]);
+
+  const trpc = useTRPC();
+
+  const agentRespondMutation = useMutation(
+    trpc.meetings.agentRespond.mutationOptions({}),
+  );
+
+  const processSummaryMutation = useMutation(
+    trpc.meetings.processSummary.mutationOptions({}),
+  );
+
+  const saveMeetingStateMutation = useMutation(
+    trpc.meetings.saveMeetingState.mutationOptions({}),
+  );
 
   const listenerRef = useRef<SpeechToText | null>(null);
-  const speechQueueRef = useRef<string[]>([]);
   const isSpeakingRef = useRef(false);
   const conversationHistoryRef = useRef<
     { role: "user" | "assistant"; content: string; timestamp: string }[]
@@ -35,7 +59,7 @@ export const useAgentCall = ({
   const callStartTimeRef = useRef<number | null>(null);
 
   const finalTextTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null
+    null,
   );
   const lastFinalTextRef = useRef<string | null>(null);
 
@@ -49,79 +73,45 @@ export const useAgentCall = ({
     setIsUserSpeaking(false);
   };
 
-  // Initialize voices for mobile browsers
-  const initVoices = () => {
-    return new Promise<void>((resolve) => {
-      if (speechSynthesis.getVoices().length > 0) {
-        resolve();
-        return;
-      }
-
-      const onVoicesChanged = () => {
-        speechSynthesis.removeEventListener("voiceschanged", onVoicesChanged);
-        resolve();
-      };
-
-      speechSynthesis.addEventListener("voiceschanged", onVoicesChanged);
-    });
+  const getCallTimestamp = () => {
+    if (!callStartTimeRef.current) return "00:00";
+    const elapsedMs = Date.now() - callStartTimeRef.current;
+    const seconds = Math.floor(elapsedMs / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes.toString().padStart(2, "0")}:${remainingSeconds
+      .toString()
+      .padStart(2, "0")}`;
   };
 
-  const speakQueue = async (chunks: string[]) => {
-    if (chunks.length === 0) {
-      isSpeakingRef.current = false;
-      setIsSpeaking(false);
-      debouncedStartListening();
-      return;
-    }
-
-    // Initialize voices before speaking
-    await initVoices();
-
-    const [current, ...rest] = chunks;
-    const utterance = new SpeechSynthesisUtterance(current);
-    utterance.lang = "en-US";
-
-    // Get voices and select a good one for mobile
-    const voices = speechSynthesis.getVoices();
-    const englishVoice = voices.find(
-      (voice) =>
-        voice.lang.includes("en") &&
-        (voice.name.includes("Google") || voice.name.includes("Female"))
-    );
-    if (englishVoice) {
-      utterance.voice = englishVoice;
-    }
-
-    utterance.onstart = () => {
-      stopListening();
-    };
-
-    utterance.onend = () => {
-      speakQueue(rest);
-    };
-
-    speechSynthesis.speak(utterance);
+  const getMaxTimestampInHistory = (
+    history: { timestamp: string }[],
+  ): number => {
+    let maxSeconds = 0;
+    history.forEach((msg) => {
+      if (msg.timestamp) {
+        const [min, sec] = msg.timestamp.split(":").map(Number);
+        const totalSec = min * 60 + sec;
+        if (totalSec > maxSeconds) maxSeconds = totalSec;
+      }
+    });
+    return maxSeconds;
   };
 
   const speak = async (fullText: string) => {
     try {
-      speechSynthesis.cancel();
+      browserStop();
       isSpeakingRef.current = true;
       setIsSpeaking(true);
+      stopListening();
 
-      const cleanedText = fullText
-        .replace(/\*+/g, "")
-        .replace(/#+\s*/g, "")
-        .replace(/[_~`]+/g, "")
-        .replace(/\[(.*?)\]\(.*?\)/g, "$1")
-        .replace(/<\/?[^>]+(>|$)/g, "");
+      await browserSpeak(fullText, voiceId);
 
-      const chunks = cleanedText.match(/[^\.!\?]+[\.!\?]+/g) || [cleanedText];
-      speechQueueRef.current = chunks;
-      await speakQueue(chunks);
+      isSpeakingRef.current = false;
+      setIsSpeaking(false);
+      debouncedStartListening();
     } catch (error) {
       console.error("Error in speak function:", error);
-      // On error, try to continue with the call even if speech fails
       isSpeakingRef.current = false;
       setIsSpeaking(false);
       debouncedStartListening();
@@ -129,50 +119,45 @@ export const useAgentCall = ({
   };
 
   const fetchAgentResponse = async (userText: string) => {
-    conversationHistoryRef.current.push({
-      role: "user",
+    const userEntry = {
+      role: "user" as const,
       content: userText,
       timestamp: getCallTimestamp(),
-    });
+    };
+    conversationHistoryRef.current.push(userEntry);
+    setMessages((prev) => [...prev, userEntry]);
 
-    const res = await fetch("/api/agent-stream", {
-      method: "POST",
-      body: JSON.stringify({
+    try {
+      const result = await agentRespondMutation.mutateAsync({
         agentName,
         agentInstructions,
         conversationHistory: conversationHistoryRef.current,
-      }),
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+      });
 
-    const reader = res.body?.getReader();
-    const decoder = new TextDecoder();
-    let fullAgentText = "";
+      const fullAgentText = result.text;
 
-    if (!reader) return;
+      const agentEntry = {
+        role: "assistant" as const,
+        content: fullAgentText,
+        timestamp: getCallTimestamp(),
+      };
+      conversationHistoryRef.current.push(agentEntry);
+      setMessages((prev) => [...prev, agentEntry]);
 
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      const chunk = decoder.decode(value);
-      fullAgentText += chunk;
+      speak(fullAgentText);
+      onMessageComplete?.(fullAgentText);
+    } catch (error) {
+      console.error("Error fetching agent response:", error);
+      isSpeakingRef.current = false;
+      setIsSpeaking(false);
+      debouncedStartListening();
     }
-
-    conversationHistoryRef.current.push({
-      role: "assistant",
-      content: fullAgentText.trim(),
-      timestamp: getCallTimestamp(),
-    });
-
-    speak(fullAgentText.trim());
-    onMessageComplete?.(fullAgentText.trim());
   };
 
   const rawStartListening = () => {
     if (!inCall || isListening || isSpeakingRef.current) return;
     setIsUserSpeaking(true);
+
     if (listenerRef.current) {
       try {
         listenerRef.current.startListening();
@@ -185,7 +170,7 @@ export const useAgentCall = ({
 
     try {
       const listener = new SpeechToText(
-        (finalText) => {
+        (finalText: string) => {
           if (!finalText) return;
 
           lastFinalTextRef.current = finalText;
@@ -198,7 +183,7 @@ export const useAgentCall = ({
             const userText = lastFinalTextRef.current;
             if (!userText) return;
 
-            speechSynthesis.cancel();
+            browserStop();
             isSpeakingRef.current = false;
             setIsSpeaking(false);
 
@@ -207,14 +192,14 @@ export const useAgentCall = ({
 
             lastFinalTextRef.current = null;
             finalTextTimeoutRef.current = null;
-          }, 3000);
+          }, 1500);
         },
         () => {
           if (inCall && !isSpeakingRef.current) {
             debouncedStartListening();
           }
         },
-        () => {}
+        () => {},
       );
 
       listenerRef.current = listener;
@@ -225,16 +210,17 @@ export const useAgentCall = ({
     }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const debouncedStartListening = useCallback(
     debounce(rawStartListening, 300),
-    [inCall, isListening]
+    [inCall, isListening],
   );
 
   const onCallEnd = async ({ meetingId }: { meetingId: string }) => {
     try {
       // Stop all voice-related activities
       stopListening();
-      speechSynthesis.cancel();
+      browserStop();
       isSpeakingRef.current = false;
       setIsSpeaking(false);
       setIsListening(false);
@@ -252,21 +238,15 @@ export const useAgentCall = ({
       }
 
       // Save conversation history and process summary
-      await fetch("/api/process-summary", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          conversationHistory: conversationHistoryRef.current,
-          meetingId,
-        }),
+      await processSummaryMutation.mutateAsync({
+        meetingId,
+        conversationHistory: conversationHistoryRef.current,
       });
 
       // Reset all refs
-      speechQueueRef.current = [];
       conversationHistoryRef.current = [];
       callStartTimeRef.current = null;
+      setMessages([]);
     } catch (error) {
       console.error("Error sending conversation history:", error);
     }
@@ -274,74 +254,28 @@ export const useAgentCall = ({
 
   const onCallHold = async ({ meetingId }: { meetingId: string }) => {
     try {
-      await fetch("/api/save-conversation", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          conversationHistory: conversationHistoryRef.current,
-          meetingId,
-        }),
+      // Stop voice activities before saving
+      stopListening();
+      browserStop();
+      isSpeakingRef.current = false;
+      setIsSpeaking(false);
+
+      if (finalTextTimeoutRef.current) {
+        clearTimeout(finalTextTimeoutRef.current);
+        finalTextTimeoutRef.current = null;
+      }
+
+      if (listenerRef.current) {
+        listenerRef.current.stopListening();
+        listenerRef.current = null;
+      }
+
+      await saveMeetingStateMutation.mutateAsync({
+        meetingId,
+        conversationHistory: conversationHistoryRef.current,
       });
     } catch (error) {
       console.error("Error sending conversation history:", error);
-    }
-  };
-
-  const getCallTimestamp = () => {
-    if (!callStartTimeRef.current) return "00:00";
-    const elapsedMs = Date.now() - callStartTimeRef.current;
-    const seconds = Math.floor(elapsedMs / 1000);
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes.toString().padStart(2, "0")}:${remainingSeconds
-      .toString()
-      .padStart(2, "0")}`;
-  };
-
-  const getMaxTimestampInHistory = (
-    history: { timestamp: string }[]
-  ): number => {
-    let maxSeconds = 0;
-    history.forEach((msg) => {
-      if (msg.timestamp) {
-        const [min, sec] = msg.timestamp.split(":").map(Number);
-        const totalSec = min * 60 + sec;
-        if (totalSec > maxSeconds) maxSeconds = totalSec;
-      }
-    });
-    return maxSeconds;
-  };
-
-  // Initialize audio for mobile browsers
-  const initializeAudio = async () => {
-    try {
-      // Request audio permissions and initialize audio context
-      await navigator.mediaDevices.getUserMedia({ audio: true });
-
-      // Create and start an audio context (this helps with audio playback on mobile)
-      const AudioContext =
-        window.AudioContext ||
-        (
-          window as unknown as {
-            webkitAudioContext: typeof window.AudioContext;
-          }
-        ).webkitAudioContext;
-
-      const audioContext = new AudioContext();
-      const silence = audioContext.createOscillator();
-      silence.connect(audioContext.destination);
-      silence.start();
-      silence.stop(audioContext.currentTime + 0.01);
-
-      // Pre-initialize speech synthesis
-      await initVoices();
-
-      return true;
-    } catch (error) {
-      console.error("Error initializing audio:", error);
-      return false;
     }
   };
 
@@ -354,31 +288,36 @@ export const useAgentCall = ({
       }
       callStartTimeRef.current = Date.now() - offsetSeconds * 1000;
 
-      // Initialize audio and then speak greeting
-      initializeAudio()
-        .then(() => {
-          const greeting =
-            conversationHistory && conversationHistory.length > 0
-              ? "Hello, shall we continue?"
-              : `Hello, I am ${agentName}, here to help you out.`;
-          speak(greeting);
-        })
-        .catch((error) => {
-          console.error("Failed to initialize audio:", error);
-        });
+      const greeting =
+        conversationHistory && conversationHistory.length > 0
+          ? "Hello, shall we continue?"
+          : `Hello, I am ${agentName}, here to help you out.`;
+
+      const initial =
+        conversationHistory && conversationHistory.length > 0
+          ? [...conversationHistory]
+          : [];
+      initial.push({
+        role: "assistant",
+        content: greeting,
+        timestamp: getCallTimestamp(),
+      });
+      setMessages(initial);
+
+      speak(greeting);
     } else {
       // Complete cleanup when call ends
       stopListening();
-      speechSynthesis.cancel();
+      browserStop();
       isSpeakingRef.current = false;
       setIsSpeaking(false);
       setIsListening(false);
       setIsUserSpeaking(false);
       listenerRef.current?.stopListening();
       listenerRef.current = null;
-      speechQueueRef.current = [];
       conversationHistoryRef.current = [];
       callStartTimeRef.current = null;
+      setMessages([]);
       if (finalTextTimeoutRef.current) {
         clearTimeout(finalTextTimeoutRef.current);
         finalTextTimeoutRef.current = null;
@@ -388,7 +327,7 @@ export const useAgentCall = ({
     return () => {
       // Cleanup on unmount
       stopListening();
-      speechSynthesis.cancel();
+      browserStop();
       if (finalTextTimeoutRef.current) {
         clearTimeout(finalTextTimeoutRef.current);
         finalTextTimeoutRef.current = null;
@@ -402,6 +341,7 @@ export const useAgentCall = ({
     isListening,
     isSpeaking,
     isUserSpeaking,
+    messages,
     onCallEnd,
     onCallHold,
   };

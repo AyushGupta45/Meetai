@@ -73,18 +73,18 @@ const MeetingIdViewHeader = ({
         <DropdownMenuContent align="end">
           {canEdit && (
             <DropdownMenuItem onClick={onEdit}>
-              <PencilIcon className="size-4 text-black" />
+              <PencilIcon className="size-4" />
               Edit
             </DropdownMenuItem>
           )}
           {canMarkAsCompleted && (
             <DropdownMenuItem onClick={onMarkAsCompleted}>
-              <CheckCircle className="size-4 text-black" />
+              <CheckCircle className="size-4" />
               Mark as Completed
             </DropdownMenuItem>
           )}
           <DropdownMenuItem onClick={onRemove}>
-            <TrashIcon className="size-4 text-black" />
+            <TrashIcon className="size-4" />
             Delete
           </DropdownMenuItem>
         </DropdownMenuContent>

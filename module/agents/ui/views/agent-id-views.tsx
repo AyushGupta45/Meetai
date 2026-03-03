@@ -10,12 +10,13 @@ import {
 import AgentIdViewHeader from "../components/agent-id-view-header";
 import { GeneratedAvatar } from "@/components/generated-avatar";
 import { Badge } from "@/components/ui/badge";
-import { VideoIcon } from "lucide-react";
+import { VideoIcon, MicIcon, KeyIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useConfirm } from "@/hooks/use-confirm";
 import { useState } from "react";
 import { UpdateAgentDialog } from "../components/update-agent-dialog";
+import { AGENT_TEMPLATES } from "../../constants";
 
 interface Props {
   agentId: string;
@@ -26,7 +27,7 @@ const AgentsIdView = ({ agentId }: Props) => {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const { data } = useSuspenseQuery(
-    trpc.agents.getOne.queryOptions({ id: agentId })
+    trpc.agents.getOne.queryOptions({ id: agentId }),
   );
 
   const [updateAgentDialogOpen, setUpdateAgentDialogOpen] = useState(false);
@@ -35,22 +36,19 @@ const AgentsIdView = ({ agentId }: Props) => {
     trpc.agents.remove.mutationOptions({
       onSuccess: async () => {
         await queryClient.invalidateQueries(
-          trpc.agents.getMany.queryOptions({})
-        );
-        await queryClient.invalidateQueries(
-          trpc.premium.getFreeUsage.queryOptions()
+          trpc.agents.getMany.queryOptions({}),
         );
         router.push("/agents");
       },
       onError: (error) => {
         toast.error(error.message);
       },
-    })
+    }),
   );
 
   const [RemoveConfirmation, confirmRemove] = useConfirm(
     "Are you sure",
-    `The followingaction will remove ${data.meetingCount} associated meetings`
+    `The followingaction will remove ${data.meetingCount} associated meetings`,
   );
 
   const handleRemoveAgent = async () => {
@@ -75,7 +73,7 @@ const AgentsIdView = ({ agentId }: Props) => {
           onEdit={() => setUpdateAgentDialogOpen(true)}
           onRemove={handleRemoveAgent}
         />
-        <div className="bg-white rounded-lg border">
+        <div className="bg-card rounded-lg border">
           <div className="px-4 py-5 gap-y-5 flex flex-col col-span-5">
             <div className="flex items-center gap-x-3">
               <GeneratedAvatar
@@ -93,6 +91,32 @@ const AgentsIdView = ({ agentId }: Props) => {
               {data.meetingCount}{" "}
               {data.meetingCount === 1 ? "meeting" : "meetings"}
             </Badge>
+            <Badge
+              variant="outline"
+              className="flex items-center gap-x-2 [&>svg]:size-4"
+            >
+              <MicIcon className="text-green-700" />
+              {data.voiceId || "Default voice"}
+            </Badge>
+            {data.credentialName && (
+              <Badge
+                variant="outline"
+                className="flex items-center gap-x-2 [&>svg]:size-4"
+              >
+                <KeyIcon className="text-orange-600" />
+                {data.credentialName}
+                <span className="text-muted-foreground text-xs">
+                  ({data.credentialType})
+                </span>
+              </Badge>
+            )}
+            {data.template && data.template !== "custom" && (
+              <Badge variant="secondary" className="text-xs">
+                Template:{" "}
+                {AGENT_TEMPLATES.find((t) => t.id === data.template)?.title ??
+                  data.template}
+              </Badge>
+            )}
             <div className="flex flex-col gap-y-4">
               <p className="text-lg font-medium ">Instructions</p>
               <p className="text-neutral-800">{data.instructions}</p>

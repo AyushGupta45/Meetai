@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { MeetingGetOne } from "../../types";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { GeneratedAvatarUri } from "@/lib/avatar";
 import { authClient } from "@/lib/auth-client";
-import { SearchIcon } from "lucide-react";
+import { SearchIcon, DownloadIcon } from "lucide-react";
 import Highlighter from "react-highlight-words";
 
 interface Props {
@@ -22,10 +23,42 @@ const MeetingTranscription = ({ data }: Props) => {
     console.error("Invalid JSON in conversationHistory");
   }
 
+  const handleExport = useCallback(() => {
+    const lines = conversationHistory.map(
+      (msg: { role: string; content: string; timestamp?: string }) => {
+        const name =
+          msg.role === "user"
+            ? userData?.user?.name || "You"
+            : data.agent?.name || "Assistant";
+        const ts = msg.timestamp ? `[${msg.timestamp}] ` : "";
+        return `${ts}${name}: ${msg.content}`;
+      },
+    );
+    const text = lines.join("\n\n");
+    const blob = new Blob([text], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${data.name || "transcript"}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [conversationHistory, data.agent?.name, data.name, userData?.user?.name]);
+
   return (
-    <div className="bg-white rounded-lg border w-full max-h-[calc(80vh-72px)] flex flex-col gap-y-4 p-2">
+    <div className="bg-card rounded-lg border w-full max-h-[calc(80vh-72px)] flex flex-col gap-y-4 p-2">
       <div className="p-4 pb-3 gap-y-5 flex flex-col shrink-0">
-        <p className="text-2xl font-medium">Meeting Transcription</p>
+        <div className="flex items-center justify-between">
+          <p className="text-2xl font-medium">Meeting Transcription</p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExport}
+            disabled={conversationHistory.length === 0}
+          >
+            <DownloadIcon className="size-3.5 mr-1.5" />
+            Export
+          </Button>
+        </div>
         <div className="relative">
           <Input
             value={searchQuery}

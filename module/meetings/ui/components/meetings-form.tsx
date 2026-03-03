@@ -45,40 +45,34 @@ export const MeetingForm = ({
     trpc.agents.getMany.queryOptions({
       pageSize: 100,
       search: agentSearch,
-    })
+    }),
   );
 
   const createMeeting = useMutation(
     trpc.meetings.create.mutationOptions({
       onSuccess: async (data) => {
         await queryClient.invalidateQueries(
-          trpc.meetings.getMany.queryOptions({})
-        );
-        await queryClient.invalidateQueries(
-          trpc.premium.getFreeUsage.queryOptions()
+          trpc.meetings.getMany.queryOptions({}),
         );
 
         onSuccess?.(data.id);
       },
       onError: (error) => {
         toast.error(error.message);
-        if (error.data?.code === "FORBIDDEN") {
-          router.push("/upgrade");
-        }
       },
-    })
+    }),
   );
 
   const updateMeeting = useMutation(
     trpc.meetings.update.mutationOptions({
       onSuccess: async () => {
         await queryClient.invalidateQueries(
-          trpc.meetings.getMany.queryOptions({})
+          trpc.meetings.getMany.queryOptions({}),
         );
 
         if (initialValues?.id) {
           await queryClient.invalidateQueries(
-            trpc.meetings.getOne.queryOptions({ id: initialValues.id })
+            trpc.meetings.getOne.queryOptions({ id: initialValues.id }),
           );
         }
         onSuccess?.();
@@ -86,7 +80,7 @@ export const MeetingForm = ({
       onError: (error) => {
         toast.error(error.message);
       },
-    })
+    }),
   );
 
   const form = useForm<z.infer<typeof meetingsInsertSchema>>({

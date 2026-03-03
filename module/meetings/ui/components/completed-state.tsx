@@ -1,10 +1,16 @@
-import { SparklesIcon, BookOpenTextIcon, FileTextIcon } from "lucide-react";
+import {
+  SparklesIcon,
+  BookOpenTextIcon,
+  FileTextIcon,
+  ListChecksIcon,
+} from "lucide-react";
 import { MeetingGetOne } from "../../types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import MeetingSummary from "./meeting-summary";
 import MeetingTranscription from "./meeting-transcription";
 import MeetingChat from "./meeting-chat";
+import MeetingActionItems from "./meeting-action-items";
 
 interface Props {
   data: MeetingGetOne;
@@ -14,7 +20,7 @@ export const CompletedState = ({ data }: Props) => {
   return (
     <div className="flex flex-col gap-y-4">
       <Tabs defaultValue="summary">
-        <div className="bg-white rounded-lg border px-3">
+        <div className="bg-card rounded-lg border px-3">
           <ScrollArea>
             <TabsList className="p-0 bg-background justify-start rounded-none h-13">
               <TabsTrigger
@@ -38,6 +44,13 @@ export const CompletedState = ({ data }: Props) => {
                 <SparklesIcon />
                 Ask AI
               </TabsTrigger>
+              <TabsTrigger
+                value="actions"
+                className="text-muted-foreground rounded-none bg-background data-[state=active]:shadow-none border-b-2 border-transparent data-[state=active]:border-b-primary data-[state=active]:text-accent-foreground h-full hover:text-accent-foreground"
+              >
+                <ListChecksIcon />
+                Action Items
+              </TabsTrigger>
             </TabsList>
             <ScrollBar orientation="horizontal" />
           </ScrollArea>
@@ -50,6 +63,9 @@ export const CompletedState = ({ data }: Props) => {
         </TabsContent>
         <TabsContent value="chat">
           <MeetingChat data={data} />
+        </TabsContent>
+        <TabsContent value="actions">
+          <MeetingActionItems data={data} />
         </TabsContent>
       </Tabs>
     </div>

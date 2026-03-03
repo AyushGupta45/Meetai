@@ -9,7 +9,7 @@ interface Props {
 
 export const UpcomingState = ({ meetingId }: Props) => {
   return (
-    <div className="bg-white round-lg px-4 py-5 flex flex-col gap-y-8 items-center justify-center">
+    <div className="bg-card rounded-lg border px-4 py-5 flex flex-col gap-y-8 items-center justify-center">
       <EmptyState
         image="/upcoming.svg"
         title="Not Started yet"

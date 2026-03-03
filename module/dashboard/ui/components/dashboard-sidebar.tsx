@@ -11,16 +11,20 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { BotIcon, StarIcon, VideoIcon } from "lucide-react";
+import { BotIcon, HomeIcon, KeyIcon, VideoIcon } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { usePathname } from "next/navigation";
 import DashboardUserButton from "./dashboard-user-button";
-import DashboardTrial from "./dashboard-trial";
 
 const firstsection = [
+  {
+    icon: HomeIcon,
+    label: "Home",
+    href: "/",
+  },
   {
     icon: VideoIcon,
     label: "Meetings",
@@ -31,12 +35,10 @@ const firstsection = [
     label: "Agents",
     href: "/agents",
   },
-];
-const secondsection = [
   {
-    icon: StarIcon,
-    label: "Upgrade",
-    href: "/upgrade",
+    icon: KeyIcon,
+    label: "Credentials",
+    href: "/credentials",
   },
 ];
 
@@ -45,9 +47,12 @@ const DashboardSidebar = () => {
   return (
     <Sidebar>
       <SidebarHeader className="text-sidebar-accent-foreground">
-        <Link href="/" className="flex items-center gap-2 px-2 pt-2">
-          <Image src="/logo.svg" height={36} width={36} alt="MeetAI" />
-          <p className="text-2xl font-semibold">MeetAI</p>
+        <Link
+          href="/"
+          className="flex items-centerv justify-center gap-2 px-2 pt-2"
+        >
+          <Image src="/logo.svg" height={32} width={32} alt="MeetAI" />
+          <p className="text-2xl font-bold">MeetAI</p>
         </Link>
       </SidebarHeader>
       <div className="px-4 py-2">
@@ -64,36 +69,7 @@ const DashboardSidebar = () => {
                     className={cn(
                       "h-10 hover:bg-linear-to-r/oklch border border-transparent hover:border-[#5D6B68]/10 from-bg-sidebar-accent from-5% via-30% via-sidebar/50 to-sidebar/50",
                       pathname === item.href &&
-                        "bg-linear-tp-r/oklch border-[#5D6B68]/10"
-                    )}
-                    isActive={pathname === item.href}
-                  >
-                    <Link href={item.href}>
-                      <item.icon />
-                      <span className="text-sm font-medium tracking-tight">
-                        {item.label}
-                      </span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-        <div className="px-4 py-2">
-          <Separator className="opacity-20 text-[#5D6B68]" />
-        </div>
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {secondsection.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton
-                    asChild
-                    className={cn(
-                      "h-10 hover:bg-linear-to-r/oklch border border-transparent hover:border-[#5D6B68]/10 from-bg-sidebar-accent from-5% via-30% via-sidebar/50 to-sidebar/50",
-                      pathname === item.href &&
-                        "bg-linear-tp-r/oklch border-[#5D6B68]/10"
+                        "bg-linear-tp-r/oklch border-[#5D6B68]/10",
                     )}
                     isActive={pathname === item.href}
                   >
@@ -111,9 +87,6 @@ const DashboardSidebar = () => {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
-        <DashboardTrial />
-        <div className="py-1" />
-
         <DashboardUserButton />
       </SidebarFooter>
     </Sidebar>

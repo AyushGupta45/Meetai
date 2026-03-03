@@ -27,7 +27,7 @@ const MeetingIdView = ({ meetingId }: Props) => {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const { data } = useSuspenseQuery(
-    trpc.meetings.getOne.queryOptions({ id: meetingId })
+    trpc.meetings.getOne.queryOptions({ id: meetingId }),
   );
 
   const [updateMeetingDialogOpen, setUpdateMeetingDialogOpen] = useState(false);
@@ -36,27 +36,36 @@ const MeetingIdView = ({ meetingId }: Props) => {
     trpc.meetings.remove.mutationOptions({
       onSuccess: async () => {
         await queryClient.invalidateQueries(
-          trpc.meetings.getMany.queryOptions({})
-        );
-        await queryClient.invalidateQueries(
-          trpc.premium.getFreeUsage.queryOptions()
+          trpc.meetings.getMany.queryOptions({}),
         );
         router.push("/meetings");
       },
       onError: (error) => {
         toast.error(error.message);
       },
-    })
+    }),
+  );
+
+  const processSummaryMutation = useMutation(
+    trpc.meetings.processSummary.mutationOptions({
+      onSuccess: () => {
+        toast.success("Meeting marked as completed and summary processed.");
+        router.push("/meetings");
+      },
+      onError: (error) => {
+        toast.error(error.message || "An unexpected error occurred.");
+      },
+    }),
   );
 
   const [RemoveConfirmation, confirmRemove] = useConfirm(
     "Are you sure",
-    `The following action will remove this meetings details`
+    `The following action will remove this meetings details`,
   );
 
   const [MarkAsCompletedConfirmation, confirmMarkAsCompleted] = useConfirm(
     "Mark as Completed?",
-    "This will process the meeting summary and mark the meeting as completed."
+    "This will process the meeting summary and mark the meeting as completed.",
   );
 
   const handleRemoveMeeting = async () => {
@@ -70,27 +79,14 @@ const MeetingIdView = ({ meetingId }: Props) => {
     const ok = await confirmMarkAsCompleted();
     if (!ok) return;
 
-    try {
-      const response = await fetch("/api/process-summary", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          meetingId: meetingId,
-          conversationHistory: data.conversationHistory,
-        }),
-      });
+    const conversationHistory = data.conversationHistory
+      ? JSON.parse(data.conversationHistory as string)
+      : [];
 
-      router.push("/meetings");
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to process meeting summary.");
-      }
-
-      toast.success("Meeting marked as completed and summary processed.");
-    } catch (error: any) {
-      toast.error(error.message || "An unexpected error occurred.");
-    }
+    processSummaryMutation.mutate({
+      meetingId: meetingId,
+      conversationHistory,
+    });
   };
 
   const isActive = data.status === "active";

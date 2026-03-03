@@ -1,4 +1,11 @@
-import { pgTable, text, timestamp, boolean, pgEnum } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  text,
+  timestamp,
+  boolean,
+  pgEnum,
+  jsonb,
+} from "drizzle-orm/pg-core";
 import { nanoid } from "nanoid";
 
 export const user = pgTable("user", {
@@ -65,7 +72,40 @@ export const agents = pgTable("agents", {
   userId: text("user_id")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
+  credentialId: text("credential_id")
+    .notNull()
+    .references(() => credentials.id, { onDelete: "cascade" }),
   instructions: text("instructions").notNull(),
+  voiceId: text("voice_id").notNull().default(""),
+  template: text("template"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const credentialType = pgEnum("credential_type", [
+  "OPENAI",
+  "ANTHROPIC",
+  "GEMINI",
+  "GROQ",
+  "OLLAMA",
+  "OPENROUTER",
+  "CUSTOM",
+]);
+
+export const credentials = pgTable("credentials", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => nanoid()),
+  name: text("name").notNull(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  type: credentialType("type").notNull(),
+  value: text("value").notNull(), // encrypted API key
+  metadata: jsonb("metadata").$type<{
+    baseUrl?: string;
+    model?: string;
+  }>(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -96,6 +136,7 @@ export const meetings = pgTable("meetings", {
   conversationHistory: text("conversation_history"),
   chatHistory: text("chat_history"),
   summary: text("summary"),
+  actionItems: text("action_items"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

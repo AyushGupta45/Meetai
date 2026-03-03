@@ -7,6 +7,8 @@ import { GeneratedAvatarUri } from "@/lib/avatar";
 import { authClient } from "@/lib/auth-client";
 import { format } from "date-fns";
 import { MessageSquareCode, SendHorizonal } from "lucide-react";
+import { useTRPC } from "@/trpc/client";
+import { useMutation } from "@tanstack/react-query";
 
 interface Props {
   data: MeetingGetOne;
@@ -14,12 +16,17 @@ interface Props {
 
 const MeetingChat = ({ data }: Props) => {
   const { data: session } = authClient.useSession();
+  const trpc = useTRPC();
   const [chatMessages, setChatMessages] = useState<any[]>([]);
   const [chatLoaded, setChatLoaded] = useState(false);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [showTyping, setShowTyping] = useState(false);
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
+
+  const meetingChatMutation = useMutation(
+    trpc.meetings.meetingChat.mutationOptions({}),
+  );
 
   useEffect(() => {
     if (data.chatHistory && typeof data.chatHistory === "string") {
@@ -58,22 +65,19 @@ const MeetingChat = ({ data }: Props) => {
     setShowTyping(true);
 
     try {
-      const res = await fetch("/api/meeting-chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          meetingId: data.id,
-          messages: updatedMessages,
-          summary: data.summary,
-          instructions: data.agent.instructions,
-          agentName: data.agent.name,
-          userName: session?.user.name,
-        }),
+      const { reply } = await meetingChatMutation.mutateAsync({
+        meetingId: data.id,
+        messages: updatedMessages.map(
+          (m: { role: string; content: string }) => ({
+            role: m.role as "system" | "user" | "assistant",
+            content: m.content,
+          }),
+        ),
+        summary: data.summary || "",
+        instructions: data.agent.instructions,
+        agentName: data.agent.name,
+        userName: session?.user.name || "User",
       });
-
-      const { reply } = await res.json();
 
       setChatMessages((prev) => [...prev, reply]);
     } catch (err) {
@@ -135,7 +139,6 @@ const MeetingChat = ({ data }: Props) => {
           <div className="text-xs text-muted-foreground mt-1">
             <span>
               {msg.name} • {format(new Date(msg.timestamp), "PP p")}
-
             </span>
           </div>
         </div>
@@ -174,7 +177,7 @@ const MeetingChat = ({ data }: Props) => {
   };
 
   return (
-    <div className="bg-white rounded-lg border w-full h-[calc(80vh-72px)] flex flex-col p-2 overflow-hidden">
+    <div className="bg-card rounded-lg border w-full h-[calc(80vh-72px)] flex flex-col p-2 overflow-hidden">
       {chatLoaded && chatMessages.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center text-muted-foreground select-none">
           <MessageSquareCode
@@ -188,7 +191,7 @@ const MeetingChat = ({ data }: Props) => {
           {chatMessages.map((msg, idx) =>
             msg.role === "user"
               ? renderUserMessage(msg, idx)
-              : renderAssistantMessage(msg, idx)
+              : renderAssistantMessage(msg, idx),
           )}
           {showTyping && renderTypingIndicator()}
           <div ref={endOfMessagesRef} />

@@ -3,7 +3,7 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { AgentGetMany } from "../../types";
 import { GeneratedAvatar } from "@/components/generated-avatar";
-import { CornerDownRightIcon, VideoIcon } from "lucide-react";
+import { CornerDownRightIcon, VideoIcon, MicIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 export const columns: ColumnDef<AgentGetMany[number]>[] = [
@@ -29,6 +29,21 @@ export const columns: ColumnDef<AgentGetMany[number]>[] = [
         </div>
       </div>
     ),
+  },
+  {
+    accessorKey: "voiceId",
+    header: "Voice",
+    cell: ({ row }) => {
+      return (
+        <Badge
+          variant="outline"
+          className="flex items-center gap-x-2 [&>svg]:size-4"
+        >
+          <MicIcon className="text-green-700" />
+          {row.original.voiceId || "Default"}
+        </Badge>
+      );
+    },
   },
   {
     accessorKey: "meetingCount",

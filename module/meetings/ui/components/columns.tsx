@@ -14,7 +14,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { cn, formatDuration } from "@/lib/utils";
 
-
 const statusIconMap = {
   upcoming: ClockArrowUpIcon,
   active: LoaderIcon,
@@ -23,10 +22,12 @@ const statusIconMap = {
 };
 
 const statusColorMap = {
-  upcoming: "bg-yellow-500/20 text-yellow-800 border-yellow-800/5",
-  active: "bg-blue-500/20 text-blue-800 border-blue-800/5",
-  completed: "bg-emerald-500/20 text-emerald-800 border-emerald-800/5",
-  processing: "bg-gray-300/20 text-gray-800 border-gray-800/5",
+  upcoming:
+    "bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 border-yellow-800/5",
+  active: "bg-blue-500/20 text-blue-700 dark:text-blue-400 border-blue-800/5",
+  completed:
+    "bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border-emerald-800/5",
+  processing: "bg-muted text-muted-foreground border-border",
 };
 
 export const columns: ColumnDef<MeetingGetMany[number]>[] = [
@@ -64,12 +65,12 @@ export const columns: ColumnDef<MeetingGetMany[number]>[] = [
           variant="outline"
           className={cn(
             "capitalize [&>svg]:size-4 text-muted-foreground w-[100px]",
-            statusColorMap[row.original.status as keyof typeof statusColorMap]
+            statusColorMap[row.original.status as keyof typeof statusColorMap],
           )}
         >
           <Icon
             className={cn(
-              row.original.status === "processing" && "animate-spin"
+              row.original.status === "processing" && "animate-spin",
             )}
           />
           {row.original.status}

@@ -5,6 +5,8 @@ import { CallLobby } from "./call-lobby";
 import { CallHold } from "./call-hold";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { useTRPC } from "@/trpc/client";
+import { useMutation } from "@tanstack/react-query";
 
 interface Props {
   meetingId: string;
@@ -14,6 +16,7 @@ interface Props {
   agentName: string;
   agentImage: string;
   agentInstructions: string;
+  agentVoiceId: string;
   conversationHistory: string;
 }
 
@@ -25,24 +28,25 @@ export const CallUI = ({
   agentName,
   agentImage,
   agentInstructions,
+  agentVoiceId,
   conversationHistory,
 }: Props) => {
   const router = useRouter();
+  const trpc = useTRPC();
   const [show, setShow] = useState<"call" | "ended" | "lobby" | "stalled">(
-    "lobby"
+    "lobby",
+  );
+
+  const meetingStatusMutation = useMutation(
+    trpc.meetings.meetingStatus.mutationOptions({}),
   );
 
   const handleJoin = async () => {
     try {
-      const res = await fetch("/api/meeting-status", {
-        method: "POST",
-        body: JSON.stringify({ meetingId }),
-      });
+      const result = await meetingStatusMutation.mutateAsync({ meetingId });
 
-      const result = await res.json();
-
-      if (!res.ok) {
-        toast.error("Failed to join meeting", result.error);
+      if (!result.success) {
+        toast.error(result.message);
         router.push(`/meetings/${meetingId}`);
         return;
       }
@@ -50,6 +54,7 @@ export const CallUI = ({
       setShow("call");
     } catch (err) {
       console.error("Join error", err);
+      toast.error("Failed to join meeting");
     }
   };
 
@@ -65,6 +70,7 @@ export const CallUI = ({
           agentName={agentName}
           agentImage={agentImage}
           agentInstructions={agentInstructions}
+          agentVoiceId={agentVoiceId}
           onLeave={() => setShow("ended")}
           onHold={() => setShow("stalled")}
           conversationHistory={

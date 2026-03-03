@@ -2,13 +2,24 @@
 
 import { Button } from "@/components/ui/button";
 import { useSidebar } from "@/components/ui/sidebar";
-import { PanelLeftCloseIcon, PanelLeftIcon, SearchIcon } from "lucide-react";
+import {
+  PanelLeftCloseIcon,
+  PanelLeftIcon,
+  SearchIcon,
+  SunIcon,
+  MoonIcon,
+} from "lucide-react";
 import React, { useEffect, useState } from "react";
 import DashboardCommand from "./dashboard-command";
+import { useTheme } from "next-themes";
 
 const DashboardNavbar = () => {
   const { state, toggleSidebar, isMobile } = useSidebar();
   const [commandOpen, setCommandOpen] = useState(false);
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -46,6 +57,22 @@ const DashboardNavbar = () => {
             <span className="text-xs">&#8984;</span>K
           </kbd>
         </Button>
+
+        <div className="ml-auto">
+          {mounted && (
+            <Button
+              variant="outline"
+              className="size-9"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            >
+              {theme === "dark" ? (
+                <SunIcon className="size-4" />
+              ) : (
+                <MoonIcon className="size-4" />
+              )}
+            </Button>
+          )}
+        </div>
       </nav>
     </>
   );

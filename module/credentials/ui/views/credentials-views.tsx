@@ -1,0 +1,54 @@
+"use client";
+
+import ErrorState from "@/components/error-state";
+import LoadingState from "@/components/loading-state";
+import { useTRPC } from "@/trpc/client";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { columns } from "../components/columns";
+import EmptyState from "@/components/empty-state";
+import { useCredentialsFilters } from "../../hooks/use-credentials-filter";
+import { DataPagination } from "@/components/data-pagination";
+import { DataTable } from "@/components/data-table";
+
+export const CredentialsView = () => {
+  const [filters, setFilters] = useCredentialsFilters();
+  const trpc = useTRPC();
+  const { data } = useSuspenseQuery(
+    trpc.credentials.getMany.queryOptions({ ...filters }),
+  );
+
+  return (
+    <div className="flex-1 pb-4 px-4 md:px-8 flex flex-col gap-y-4">
+      <DataTable data={data.items} columns={columns} />
+      <DataPagination
+        page={filters.page}
+        totalPages={data.totalPages}
+        onPageChange={(page) => setFilters({ page })}
+      />
+      {data.items.length === 0 && (
+        <EmptyState
+          title="No credentials yet"
+          description="Add your first API credential to start using AI features. Your keys are encrypted with AES-256-GCM."
+        />
+      )}
+    </div>
+  );
+};
+
+export const CredentialsViewLoading = () => {
+  return (
+    <LoadingState
+      title="Loading Credentials"
+      description="This may take a few seconds"
+    />
+  );
+};
+
+export const CredentialsViewError = () => {
+  return (
+    <ErrorState
+      title="Error loading Credentials"
+      description="Something went wrong"
+    />
+  );
+};

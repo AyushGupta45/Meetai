@@ -14,7 +14,7 @@ interface Props {
 
 const MeetingSummary = ({ data }: Props) => {
   return (
-    <div className="bg-white rounded-lg border w-full max-h-[calc(80vh-72px)] flex flex-col p-2">
+    <div className="bg-card rounded-lg border w-full max-h-[calc(80vh-72px)] flex flex-col p-2">
       <div className="p-4 pb-3 gap-y-5 flex flex-col shrink-0">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-medium capitalize">{data.name}</h2>
@@ -42,13 +42,12 @@ const MeetingSummary = ({ data }: Props) => {
             {data.agent.name}
           </Link>
           <p>{data.startedAt ? format(data.startedAt, "PPP") : ""}</p>
-          
         </div>
         <div className="flex gap-x-2 items-center mt-2">
           <SparklesIcon className="size-5" />
           <p className="text-xl font-medium">General summary</p>
         </div>
-        <Separator/>
+        <Separator />
       </div>
 
       <div className="flex-1 overflow-auto px-4 pb-4 no-scrollbar">
@@ -80,37 +79,37 @@ const MeetingSummary = ({ data }: Props) => {
             ),
             p: (props) => (
               <p
-                className="text-base leading-7 mb-5 text-gray-800"
+                className="text-base leading-7 mb-5 text-foreground/90"
                 {...props}
               />
             ),
             ul: (props) => (
               <ul
-                className="list-disc pl-6 mb-5 text-base leading-7 text-gray-800"
+                className="list-disc pl-6 mb-5 text-base leading-7 text-foreground/90"
                 {...props}
               />
             ),
             ol: (props) => (
               <ol
-                className="list-decimal pl-6 mb-5 text-base leading-7 text-gray-800"
+                className="list-decimal pl-6 mb-5 text-base leading-7 text-foreground/90"
                 {...props}
               />
             ),
             li: (props) => (
-              <li className="mb-2 marker:text-gray-500" {...props} />
+              <li className="mb-2 marker:text-muted-foreground" {...props} />
             ),
             strong: (props) => (
-              <strong className="font-semibold text-gray-900" {...props} />
+              <strong className="font-semibold text-foreground" {...props} />
             ),
             code: (props) => (
               <code
-                className="bg-gray-100 text-sm px-1.5 py-0.5 rounded font-mono text-gray-700"
+                className="bg-muted text-sm px-1.5 py-0.5 rounded font-mono text-foreground/80"
                 {...props}
               />
             ),
             blockquote: (props) => (
               <blockquote
-                className="border-l-4 border-gray-300 pl-4 italic text-gray-600 my-6"
+                className="border-l-4 border-border pl-4 italic text-muted-foreground my-6"
                 {...props}
               />
             ),

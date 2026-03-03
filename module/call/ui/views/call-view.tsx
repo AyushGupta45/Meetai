@@ -13,7 +13,7 @@ interface Props {
 const CallView = ({ meetingId }: Props) => {
   const trpc = useTRPC();
   const { data } = useSuspenseQuery(
-    trpc.meetings.getOne.queryOptions({ id: meetingId })
+    trpc.meetings.getOne.queryOptions({ id: meetingId }),
   );
 
   if (data.status === "completed") {
@@ -33,6 +33,7 @@ const CallView = ({ meetingId }: Props) => {
       meetingName={data.name}
       agentName={data.agent.name}
       agentInstructions={data.agent.instructions}
+      agentVoiceId={data.agent.voiceId}
       conversationHistory={data.conversationHistory ?? ""}
     />
   );

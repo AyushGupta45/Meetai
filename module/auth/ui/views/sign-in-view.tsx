@@ -58,7 +58,7 @@ export const SignInView = () => {
           setPending(false);
           setError(error.message);
         },
-      }
+      },
     );
   };
 
@@ -79,7 +79,7 @@ export const SignInView = () => {
           setPending(false);
           setError(error.message);
         },
-      }
+      },
     );
   };
 
@@ -139,7 +139,9 @@ export const SignInView = () => {
                 {!!error && (
                   <Alert className="bg-destructive/10 border-none">
                     <OctagonAlertIcon className="h-4 w-4 !text-destructive" />
-                    <AlertTitle className="text-gray-600">{error}</AlertTitle>
+                    <AlertTitle className="text-destructive">
+                      {error}
+                    </AlertTitle>
                   </Alert>
                 )}
                 <Button disabled={pending} type="submit" className="full">

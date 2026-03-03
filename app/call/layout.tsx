@@ -5,4 +5,4 @@ const Layout = ({ children }: Props) => {
   return <div className="h-screen bg-black">{children}</div>;
 };
 
-export default Layout
+export default Layout;
